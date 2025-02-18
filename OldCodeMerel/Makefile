@@ -1,16 +1,15 @@
 CC			= c++
 NAME		= webserv
-CFLAGS		= -std=c++20 -Wall -Wextra -Werror -Iincludes -g -g3
-SRCFILES	= main.cpp Webserv.cpp Server.cpp Epoll.cpp Client.cpp CGI.cpp
-HEADERFILES	= Webserv.hpp Server.hpp Client.hpp CGI.hpp
+CFLAGS		= -std=c++20 -I$(DIR_INC) -g -g3
 
 DIR_SRC		= src/
 DIR_OBJ		= obj/
 DIR_INC		= includes/
 
-ALL_INC		= $(addprefix $(DIR_INC), $(HEADERFILES))
-ALL_OBJ		= $(addprefix $(DIR_OBJ), $(SRCFILES:.cpp=.o))
-ALL_SRC		= $(addprefix $(DIR_SRC), $(SRCFILES))
+SRCFILES	= $(wildcard $(DIR_SRC)*.cpp)
+HEADERFILES	= $(wildcard $(DIR_SRC)*.hpp)
+
+ALL_OBJ     = $(patsubst $(DIR_SRC)%.cpp, $(DIR_OBJ)%.o, $(SRCFILES))
 
 #----------------------------------------------------------------------------
 
@@ -24,10 +23,10 @@ re: fclean all
 clean:
 	rm -rf $(DIR_OBJ)
 	
-fclean:
-	rm -rf $(DIR_OBJ) $(NAME)
+fclean: clean
+	rm -rf $(NAME)
 
-$(DIR_OBJ)%.o: $(DIR_SRC)%.cpp $(ALL_INC)
+$(DIR_OBJ)%.o: $(DIR_SRC)%.cpp
 	@mkdir -p $(DIR_OBJ)
 	$(CC) -c $(CFLAGS) -o $@ $<
 

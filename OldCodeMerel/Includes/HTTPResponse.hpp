@@ -1,6 +1,7 @@
 #pragma once
 
 # include "Headers.hpp"
+# include "CGI.hpp"
 
 class HTTPResponse {
 	private:

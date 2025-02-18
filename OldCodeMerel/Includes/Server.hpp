@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Headers.hpp"
 #include "Client.hpp"
+#include "Headers.hpp"
+
+class Client;
 
 class Server {
 	private:
@@ -11,14 +13,16 @@ class Server {
 	public:
 		Server( uint16_t port );
 		~Server( void );
+		Server( Server&& ) noexcept = default;
+		Server& operator=( Server&& ) noexcept = default;
 
 		void initFd( void );
 		void setSocketOptions( void );
 		void bindSocket( void );
 		void listenSocket( int backlog );
 		
-		void			addClient( std::unique_ptr<Client> &Client );
-		const uint16_t	getPort( void ) const;
-		const int		getFd( void ) const;
+		void			addClient( std::unique_ptr<Client> &client );
+		uint16_t		getPort( void ) const;
+		int				getFd( void ) const;
 		Client*			getCurrentClient( int fd );
 };

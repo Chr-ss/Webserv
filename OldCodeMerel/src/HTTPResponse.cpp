@@ -1,6 +1,5 @@
-# include "Headers.hpp"
-# include "HTTPResponse.hpp"
-# include "CGI.hpp"
+# include "../Includes/Headers.hpp"
+# include "../Includes/HTTPResponse.hpp"
 
 HTTPResponse::HTTPResponse(void) {
 	m_header = "";
@@ -107,22 +106,22 @@ void	HTTPResponse::generateResponse( const HTTPRequest &request) {
 		m_status_code = 400;
 		filename = "custom_404.html"; // change
 	}
-	if (!CGIProcessor::is_cgi_script(m_filename))
-	{
-		m_filename = resolve_path(filename);
-		if (m_filename.empty())
-			m_filename = resolve_path("custom_404.html");
-		// if (m_filename.empty())
-		// 	return ("There went something wrong..."); // TO DO
-	}
-	else
-	{
-		// Not implemented
-		// TODO redo CGIProcessor
-		// CGIProcessor cgip = CGIProcessor(m_filename, m_env);
-		// cgip.send_buffer(m_clients[n].get_socket_buffer());
-		// cgip.send_eof();
-	}
+	// if (!CGI::isCgiScript(m_filename))
+	// {
+	// 	m_filename = resolvePath(filename);
+	// 	if (m_filename.empty())
+	// 		m_filename = resolvePath("custom_404.html");
+	// 	// if (m_filename.empty())
+	// 	// 	return ("There went something wrong..."); // TO DO
+	// }
+	// else
+	// {
+	// 	// Not implemented
+	// 	// TODO redo CGIProcessor
+	// 	// CGIProcessor cgip = CGIProcessor(m_filename, m_env);
+	// 	// cgip.send_buffer(m_clients[n].get_socket_buffer());
+	// 	// cgip.send_eof();
+	// }
 }
 
 std::string	HTTPResponse::loadResponse(void) {

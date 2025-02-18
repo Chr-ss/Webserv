@@ -1,5 +1,5 @@
-#include "Headers.hpp"
-#include "Server.hpp"
+#include "../Includes/Headers.hpp"
+#include "../Includes/Server.hpp"
 
 Server::Server(uint16_t port) : m_port(port) {
 	m_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -19,9 +19,9 @@ Server::~Server() {}
 // 	return (exit_code);
 // }
 
-void	Server::addClient(std::unique_ptr<Client> &Client) {
+void	Server::addClient(std::unique_ptr<Client> &client) {
 
-	m_clients.push_back(Client);
+	m_clients.push_back(std::move(client));
 }
 
 void Server::initFd(void) {
@@ -30,11 +30,11 @@ void Server::initFd(void) {
 		throw std::runtime_error("Socket creation error");
 }
 
-const uint16_t Server::getPort( void ) const {
+uint16_t Server::getPort( void ) const {
 	return (m_port);
 }
 
-const int	Server::getFd( void ) const {
+int	Server::getFd( void ) const {
 	return (m_fd);
 }
 
@@ -63,10 +63,10 @@ void Server::listenSocket(int backlog) {
 }
 
 Client* Server::getCurrentClient(int fd) {
-	for (auto it = m_clients.begin(); it != m_clients.end(); it++)
+	for (size_t i = 0; i < m_clients.size(); i++)
 	{
-		if ((*it).get_fd() == fd)
-			return &(*it);
+		if (m_clients[i]->getFd() == fd)
+			return (m_clients[i].get());
 	}
 	return (nullptr);
 }

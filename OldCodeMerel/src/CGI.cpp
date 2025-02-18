@@ -1,5 +1,5 @@
-#include "Headers.hpp"
-#include "CGI.hpp"
+#include "../Includes/Headers.hpp"
+#include "../Includes/CGI.hpp"
 
 CGI::CGI(const std::string &script_path, std::vector<char *> env_vector) : m_path(script_path)
 {

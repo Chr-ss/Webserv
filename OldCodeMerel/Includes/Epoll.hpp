@@ -1,3 +1,5 @@
+#pragma once
+
 # include "Headers.hpp"
 
 class Epoll {

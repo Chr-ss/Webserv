@@ -1,12 +1,13 @@
-# include "Headers.hpp
-# include "Client.hpp"
+
+# include "../Includes/Client.hpp"
 
 Client::Client( void ) { }
 
-Client::Client( int fd ): m_fd(fd)
+Client::Client( int fd, Server *server ): m_fd(fd), m_server(server)
 {
 	m_header_complet = false;
 	m_length_available = false;
+	std::cout << m_server->getFd() << std::endl;
 }
 
 Client::~Client()
@@ -17,6 +18,7 @@ Client::~Client()
 void	Client::parseData(int fd) {
 	std::string buffer;
 	// open file
+	(void)fd;
 
 	m_parser.expandWithBuffer(buffer);
 }

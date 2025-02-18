@@ -1,5 +1,5 @@
-# include "Headers.hpp"
-# include "Config.hpp"
+# include "../Includes/Headers.hpp"
+# include "../Includes/Config.hpp"
 
 Config::Config(void) : m_block(MAIN) {}
 

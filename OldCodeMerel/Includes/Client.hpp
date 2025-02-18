@@ -1,13 +1,16 @@
+#pragma once
+
 # include "Headers.hpp"
 # include "HTTPParser.hpp"
 # include "HTTPResponse.hpp"
 # include "Server.hpp"
 
+class Server;
 
 class Client{
 	public:
 		Client( void );
-		Client( int fd );
+		Client( int fd, Server *server );
 		Client( const Client& src ) = delete;
 		Client& operator=( const Client& src );
 		~Client( void );
@@ -26,11 +29,12 @@ class Client{
 		std::string			getEnvItem(std::string key);
 		std::vector<char*>	getEnv( void );
 		void				parseData( int fd );
+		int					getServerFd(void);
 
 	private:
 		bool								m_header_complet;
 		bool								m_length_available;
-		int								m_fd;
+		int									m_fd;
 		char								m_buff[BUFF_SIZE] = {'\0'};
 		std::string							m_socket_buffer;
 		std::map<std::string, std::string>	m_env;

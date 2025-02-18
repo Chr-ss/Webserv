@@ -16,6 +16,7 @@ class Webserv {
 		Server*	getServer( int fd );
 		Client* getClient( int fd );
 		void	addServer( Server& server );
+		void	addClient( int n, struct epoll_event &events, Server *server );
 		void	createEpoll( void );
 		int		mainLoop(void);
 };

@@ -1,9 +1,9 @@
-#include "Headers.hpp"
-#include "Webserv.hpp"
+#include "../Includes/Headers.hpp"
+#include "../Includes/Webserv.hpp"
 
 std::atomic<bool> keep_alive(true);
 
-void	signal_handler(int signum)
+void	signalHandler(int signum)
 {
 	if (signum == SIGINT)
 		keep_alive = false;
@@ -13,40 +13,59 @@ void	signal_handler(int signum)
 		std::perror("SIGPIPE receiving, ignored");
 }
 
-std::ifstream	open_configfile(char *filename) {
+std::ifstream	openConfigfile(std::string filename) {
 	std::ifstream 	config;
 	
 	config.open(filename);
 	if (!config.good())
 	{
-		std::perror(filename);
+		std::perror("can not open configfile");
 		exit (EXIT_FAILURE);
 	}
 	return (config);
 }
 
-void	handle_configfile(char *filename, Webserv &webserv)
+void	handleConfigfile(std::string filename, Webserv &webserv)
 {
 	
-	std::ifstream config = open_configfile(filename);
+	std::ifstream config = openConfigfile(filename);
 	// serverConfig = parse_configfile(config);
 	// for (int i = 0; i < serverConfig.size(); i++)
 	//	webserv.addServer(Server(serverConfig[i]))
+	(void) webserv;
+}
+
+int	secureMain(int argc, char **argv)
+{
+	std::ifstream		config;
+	Webserv				webserv;
+	std::string			str;
+
+	keep_alive = true;
+	std::signal(SIGINT, signalHandler);
+	
+	if (argc == 1)
+		handleConfigfile(DEFAULT_PATH, webserv);
+	else
+	{
+		std::string	strFilename(argv[1]);
+		handleConfigfile(strFilename, webserv);
+	}
+	return (webserv.mainLoop());
 }
 
 int main(int argc, char **argv)
 {
-	std::ifstream		config;
-	Webserv				webserv;
-	int					exit_code;
+	int	exit_code;
 
-	keep_alive = true;
-	std::signal(SIGINT, signal_handler);
-	
-	if (argc == 1)
-		handle_configfile(DEFAULT_PATH, webserv);
-	else
-		handle_configfile(argv[1], webserv);
-	exit_code = webserv.mainLoop();
+	exit_code = 0;
+	try
+	{
+		exit_code = secureMain(argc, argv);
+	}
+	catch (std::exception& e)
+	{
+		std::cout << e.what() << std::endl;
+	}
 	return (exit_code);
 }
