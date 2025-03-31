@@ -77,6 +77,9 @@ class ConfigParser {
 		void	parseTokenToDirective(std::vector<token>::iterator &it, Config &newServer);
 		void	parseTokenToLocation(std::vector<token>::iterator &it, Config &newServer);
 		void	parseTokenToLocDir(std::vector<token>::iterator &it, Location &loc);
+
+		void	checkConfig(Config &config);
+		void	setServerName(Config &config);
 		
 		void	readMimeToInput(const std::string &filepath);
 		void	parseMimeToTokens();
@@ -85,8 +88,8 @@ class ConfigParser {
 
 		void	checkPort();
 		void	checkHost();
-		void	checkServerName();
-		void	checkClientBodySize(); // https://nginx.org/en/docs/syntax.html
+		void	checkServerName();		// 
+		void	checkClientBodySize();	// https://nginx.org/en/docs/syntax.html
 
 		// GETTERS
 		std::vector<Config> getConfigs() const { return this->_configs; }

@@ -6,7 +6,7 @@ Config::~Config() {
 }
 
 int Config::setDirective(const std::string key, std::vector<std::string> values) {
-	if (key != "listen" && key != "error_page" && _directives.find(key) != _directives.end())
+	if (key != "error_page" && _directives.find(key) != _directives.end()) // key != "listen" && 
 		return (-1);
 	for (std::string str: values) {
 		_directives[key].push_back(str);
@@ -92,31 +92,43 @@ int	Config::getPort() {
 	std::string strPort;
 	auto it = this->_directives.find("listen");
 	if (it != this->_directives.end()) {
-		if (it->second.size() > 0) {
-			strPort = it->second[0];
+		strPort = it->second[0];
+		size_t pos = strPort.find(':');
+		if (pos != std::string::npos) {
+			strPort = strPort.substr(pos + 1);
+		}
+		if (strPort.find_first_not_of("0123456789") != std::string::npos) {
+			throw Config::ConfigException("Port is not a number!");
+		}
+		if (strPort.empty()) {
+			throw Config::ConfigException("Port is empty!");
 		}
 		port = stoi(strPort);
 	} else {
 		port = DEFAULT_PORT;
 	}
-	// try {
-	// } catch (std::exception &e) {
-	// 	throw Config::ConfigException(e.what());
-	// }
-	// if (port < 0 || port > 65535)
-	// 	throw Config::ConfigException("Port out of range!");
 	return (port);
 }
 
 const std::string	Config::getHost() {
-	// return ((*(this->_directives.find("host"))).second.front());
 	auto it = this->_directives.find("host");
 	if (it != this->_directives.end()) {
 		if (it->second.size() > 0) {
 			return (it->second[0]);
 		}
+	} 
+	else {
+		auto it = this->_directives.find("listen");
+		if (it != this->_directives.end()) {
+			std::string strHost = it->second[0];
+			size_t pos = strHost.find(':');
+			if (pos != std::string::npos) {
+				strHost = strHost.substr(0, pos);
+				return (strHost);
+			}
+		}
 	}
-	return ("localhost");
+	return ("");
 }
 
 const std::string	Config::getServerName() {
@@ -168,7 +180,7 @@ const std::vector<std::string>	Config::getRedirect(const std::string locKey) {
 // root /tmp/www;
 const std::vector<std::string>	Config::getRoot(const std::string locKey) {
 	std::unordered_map<std::string, std::vector<std::string>> dirMap = this->getLocDirectives(locKey);
-	auto it = dirMap.find("index");
+	auto it = dirMap.find("root");
 	if (it != dirMap.end()) {
 		if (it->second.size() > 0) {
 			return it->second;

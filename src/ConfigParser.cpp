@@ -165,6 +165,50 @@ void	ConfigParser::errorToken(token token, std::string msg) {
 	throw ConfigParser::ConfigParserException("Unexpected token at Ln " + std::to_string(line) + ", Col " + std::to_string(col) + " " + msg);
 }
 
+bool isValidIPv4(const std::string& ip) {
+	std::istringstream ss(ip);
+	std::string token;
+	int count = 0;
+
+	while (std::getline(ss, token, '.')) {
+		++count;
+		if (count > 4)
+			return (false);
+		if (token.empty() || token.length() > 3)
+			return (false);
+		for (char c : token) {
+			if (!isdigit(static_cast<unsigned char>(c)))
+				return (false);
+		}
+		if (token.length() > 1 && token[0] == '0')
+			return (false);
+		int num = std::stoi(token);
+		if (num < 0 || num > 255)
+			return (false);
+	}
+	return (true);
+}
+
+void	ConfigParser::checkConfig(Config &config) {
+	size_t indexConf = _configs.size() + 1;
+	try {;
+		for (std::vector<Config>::iterator it = this->_configs.begin(); it != this->_configs.end(); ++it) {
+			if (it->getHost() == config.getHost() && it->getPort() == config.getPort())
+				throw ConfigParser::ConfigParserException("Duplicate server block with same host and port.");
+		}
+		if (config.getPort() < 0 || config.getPort() > 65535)
+			throw ConfigParser::ConfigParserException("Port out of valid range.");
+		if (config.getHost().empty())
+			throw ConfigParser::ConfigParserException("Host is not defined.");
+		else if (!isValidIPv4(config.getHost()))
+			throw ConfigParser::ConfigParserException("Host is not a valid IPv4 address.");
+		if (config.getRoot("/").empty())
+			throw ConfigParser::ConfigParserException("Root is not defined.");
+	} catch (ConfigParser::ConfigParserException &e) {
+		throw ConfigParser::ConfigParserException("ERROR CONFIG: Server-" + std::to_string(indexConf) + ": " + std::string(e.what()));
+	}
+}
+
 token ConfigParser::getNextToken(token &lastToken, const std::regex &url_regex, const std::regex &path_regex, const std::regex &op_regex) {
 	token newToken;
 	newToken.itStart = lastToken.itEnd;
@@ -375,6 +419,7 @@ void ConfigParser::parseTokenToServer(std::vector<token>::iterator &it) {
 		}
 	}
 	// newServer.printConfig();
+	checkConfig(newServer);
 	this->_configs.push_back(newServer);
 }
 
@@ -403,10 +448,10 @@ std::unordered_map<std::string, std::vector<std::string>>	ConfigParser::parseMim
 	for (std::vector<token>::iterator it = this->_tokensMime.begin(); it != this->_tokensMime.end(); it++) {
 		if (it == this->_tokensMime.begin()) {
 			if (it->type != TYPES)
-				throw ConfigParser::ConfigParserException("Unexpected token in mime.types. Expected: TYPES");
+				throw ConfigParser::ConfigParserException("Unexpected token in http. Expected: TYPES");
 			moveOneTokenSafly(this->_tokensMime, it);
 			if (it->type != BLOCK_OPEN)
-				throw ConfigParser::ConfigParserException("Unexpected token in mime.types. Expected: BLOCK_OPEN");
+				throw ConfigParser::ConfigParserException("Unexpected token in http. Expected: BLOCK_OPEN");
 		}
 		else if (it->type == STRING) {
 			std::string key = it->value;
@@ -416,7 +461,7 @@ std::unordered_map<std::string, std::vector<std::string>>	ConfigParser::parseMim
 					break ;
 				}
 				else if (it->type != STRING) {
-					throw ConfigParser::ConfigParserException("Unexpected token in mime.types. Expected: STRING1");
+					throw ConfigParser::ConfigParserException("Unexpected token in http. Expected: STRING1");
 				}
 				mapReturn[key].push_back(it->value);
 			}
@@ -426,7 +471,7 @@ std::unordered_map<std::string, std::vector<std::string>>	ConfigParser::parseMim
 		}
 		else {
 			std::cout << it->type << std::endl;
-			throw ConfigParser::ConfigParserException("Unexpected token in mime.types. Expected: STRING2");
+			throw ConfigParser::ConfigParserException("Unexpected token in http. Expected: STRING2");
 		}
 	}
 	return (mapReturn);

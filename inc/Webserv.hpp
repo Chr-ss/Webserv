@@ -14,6 +14,7 @@
 # include <regex>
 # include <unordered_map>
 # include <cctype>
+# include <sstream>
 
 // C libs
 
