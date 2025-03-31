@@ -37,8 +37,8 @@ class Config {
 		int						getPort();
 		const std::string		getHost();
 		const std::string		getServerName();
-		const std::string		getErrorPage(const int errorCode);	// error_page 404 /tmp/www/404.html;
-		
+		const std::string		getErrorPage(int errorCode);	// error_page 404 /tmp/www/404.html;
+
 		bool							getAutoindex(const std::string locKey);			// autoindex on;
 		std::uint64_t					getClientBodySize(const std::string locKey);	// client_max_body_size 10M;
 		const std::vector<std::string>	getRedirect(const std::string locKey);			// return 301 http://example.com/newpage;

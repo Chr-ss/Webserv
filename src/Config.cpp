@@ -217,7 +217,7 @@ bool	Config::getAutoindex(const std::string locKey) {
 }
 
 // error_page 404 /tmp/www/404.html;
-const std::string	Config::getErrorPage(const int errorCode) {
+const std::string	Config::getErrorPage(int errorCode) {
 	auto it = this->_directives.find("error_page");
 	if (it != this->_directives.end()) {
 		for (size_t i = 0; i < it->second.size(); i++) {
