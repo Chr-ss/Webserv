@@ -6,7 +6,7 @@ Config::~Config() {
 }
 
 int Config::setDirective(const std::string key, std::vector<std::string> values) {
-	if (key != "listen" && _directives.find(key) != _directives.end())
+	if (key != "listen" && key != "error_page" && _directives.find(key) != _directives.end())
 		return (-1);
 	for (std::string str: values) {
 		_directives[key].push_back(str);
@@ -216,3 +216,15 @@ bool	Config::getAutoindex(const std::string locKey) {
 	return (DEFAULT_AUTOINDEX);
 }
 
+// error_page 404 /tmp/www/404.html;
+const std::string	Config::getErrorPage(const int errorCode) {
+	auto it = this->_directives.find("error_page");
+	if (it != this->_directives.end()) {
+		for (size_t i = 0; i < it->second.size(); i++) {
+			if (std::stoi(it->second[i]) == errorCode) {
+				return (it->second[i + 1]);
+			}
+		}
+	}
+	return ("");
+}

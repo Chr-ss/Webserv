@@ -6,6 +6,7 @@ void debugConfigPrint(std::vector<Config> &configs) {
 		std::cout << BOLD << "getPort(): " << config.getPort() << RESET << std::endl;
 		std::cout << BOLD << "getHost(): " << config.getHost() << RESET << std::endl;
 		std::cout << BOLD << "getServerName(): " << config.getServerName() << RESET << std::endl;
+		std::cout << BOLD << "getErrorPage(404): " << config.getErrorPage(404) << RESET << std::endl;
 		std::cout << BOLD << "getAutoindex(\"/\"): " << config.getAutoindex("/") << RESET << std::endl;
 		std::cout << BOLD << "getClientBodySize(\"/\"): " << config.getClientBodySize("/") << RESET << std::endl;
 		std::cout << BOLD << "getRoot(\"/\"): ";
