@@ -1,8 +1,14 @@
 #include "../inc/Config.hpp"
 
-Config::Config(std::unordered_map<std::string, std::vector<std::string>> const &mimeTypes) : _mimeTypes(mimeTypes) {}
+std::unordered_map<std::string, std::vector<std::string>> Config::_mimeTypes;
+
+Config::Config() {}
 
 Config::~Config() {
+}
+
+void	Config::setMimeTypes(std::unordered_map<std::string, std::vector<std::string>> mimeTypes) {
+	_mimeTypes = mimeTypes;
 }
 
 int Config::setDirective(const std::string key, std::vector<std::string> values) {

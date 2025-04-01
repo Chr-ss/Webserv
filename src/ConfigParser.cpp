@@ -165,6 +165,13 @@ void	ConfigParser::errorToken(token token, std::string msg) {
 	throw ConfigParser::ConfigParserException("Unexpected token at Ln " + std::to_string(line) + ", Col " + std::to_string(col) + " " + msg);
 }
 
+// bool isValidIPv6(const std::string& ip) {
+// 	std::regex ipv6_regex(R"((^|:)([0-9a-fA-F]{1,4}:){7}([0-9a-fA-F]{1,4}|:)|(^|:)([0-9a-fA-F]{1,4}:){1,7}:|(^|:)([0-9a-fA-F]{1,4}:){1,6}(:[0-9a-fA-F]{1,4}){1,2}|(^|:)([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,3}|(^|:)([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,4}|(^|:)([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,5}|(^|:)([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,6}|(^|:)(([0-9a-fA-F]{1,4}:){7}|:)|(^|:)(([0-9a-fA-F]{1,4}:){6}|:([0-9a-fA-F]{1,4}:){0,5})|(^|:)(([0-9a-fA-F]{1,4}:){5}|:([0-9a-fA-F]{1,4}:){0,4})|(^|:)(([0-9a-fA-F]{1,4}:){4}|:([0-9a-fA-F]{1,4}:){0,3})|(^|:)(([0-9a-fA-F]{1,4}:){3}|:([0-9a-fA-F]{1,4}:){0,2})|(^|:)(([0-9a-fA-F]{1,4}:){2}|:([0-9a-fA-F]{1,4}:))|(:(:[0-9a-fA-F]{1,4}){2
+// 		}(:[0-9a-fA-F]{1,4}){0,5}|:)|(^|:)(([0-9a-fA-F]{1,4}:){1}|:([0-9a-fA-F]{1,4}:))|(:(:[0-9a-fA-F]{1,4}){3}(:[0-9a-fA-F]{1,4}){0,4}|:)|(^|:)(([0-9a-fA-F]{1,4}:){1}|:([0-9a-fA-F]{1,4}:))|(:(:[0-9a-fA-F]{1,4}){4}(:[0-9a-fA-F]{1,4}){0,3}|:)|(^|:)(([0-9a-fA-F]{1,4}:){1}|:([0-9a-fA-F]{1,4}:))|(:(:[0-9a-fA-F]{1,4}){5}(:[0-9a-fA-F]{1,4}){0,2}|:)|(^|:)(([0-9a-fA-F]{1,4}:){1}|:([0-9a-fA-F]{1,4}:))|(:(:[0-9a-fA-F]{1,4}){6}(:[0-9a-fA-F]{1,4}){0,1}|:)|(^|:)(([0-9a-fA-F]{1,4}:){1}|:([0-9a-fA-F]{1,4}:))|(:(:[0-9a-fA-F]{1,4}){7}|:)?)$)");
+// 	return std::regex_match(ip, ipv6_regex);
+// }
+
+
 bool isValidIPv4(const std::string& ip) {
 	std::istringstream ss(ip);
 	std::string token;
@@ -193,8 +200,8 @@ void	ConfigParser::checkConfig(Config &config) {
 	size_t indexConf = _configs.size() + 1;
 	try {;
 		for (std::vector<Config>::iterator it = this->_configs.begin(); it != this->_configs.end(); ++it) {
-			if (it->getHost() == config.getHost() && it->getPort() == config.getPort())
-				throw ConfigParser::ConfigParserException("Duplicate server block with same host and port.");
+			if (it->getHost() == config.getHost() && it->getPort() == config.getPort() && it->getServerName() == config.getServerName())
+				throw ConfigParser::ConfigParserException("Duplicate server block with same host, port and servername.");
 		}
 		if (config.getPort() < 0 || config.getPort() > 65535)
 			throw ConfigParser::ConfigParserException("Port out of valid range.");
@@ -274,7 +281,7 @@ void ConfigParser::parseInputToTokens() {
 token ConfigParser::getNextMimeToken(token &lastToken) {
 	token newToken;
 	newToken.itStart = lastToken.itEnd;
-	newToken.itEnd = std::find_if(newToken.itStart, this->_input.end(), [](char c) {
+	newToken.itEnd = std::find_if(newToken.itStart, this->_inputMime.end(), [](char c) {
 		return (c == ' ' || c == '\n' || c == '\t' || c == '{' || c == '}' || c == ';' || c == '#');
 	});
 	if (newToken.itStart == newToken.itEnd) {
@@ -403,7 +410,7 @@ void ConfigParser::parseTokenToServer(std::vector<token>::iterator &it) {
 		errorToken(*it, "{");
 	else if (it->type == BLOCK_OPEN)
 		moveOneTokenSafly(this->_tokens, it);
-	Config newServer(this->_mimeTypes);
+	Config newServer;
 	for (;it != this->_tokens.end(); ++it) {
 		if (it->type == STRING)
 			parseTokenToDirective(it, newServer);
@@ -477,6 +484,10 @@ std::unordered_map<std::string, std::vector<std::string>>	ConfigParser::parseMim
 	return (mapReturn);
 }
 
+// void ConfigParser::setServerMimeTypes() {
+// 	it->setMimeTypes(this->_mimeTypes);
+// }
+
 void	ConfigParser::parseTokenToConfig() {
 	eraseToken(this->_tokens, WHITE_SPACE);
 	eraseToken(this->_tokens, COMMENT);
@@ -533,4 +544,5 @@ void	ConfigParser::parseTokenToConfig() {
 		parseMimeToTokens();
 		this->_mimeTypes = parseMimeToken();
 	}
+	this->_configs[0].setMimeTypes(this->_mimeTypes);
 }

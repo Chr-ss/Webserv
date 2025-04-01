@@ -80,6 +80,7 @@ class ConfigParser {
 
 		void	checkConfig(Config &config);
 		void	setServerName(Config &config);
+		void	setServerMimeTypes();
 		
 		void	readMimeToInput(const std::string &filepath);
 		void	parseMimeToTokens();
