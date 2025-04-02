@@ -1,19 +1,7 @@
-#ifndef CONFIGPARSER_HPP
-#define CONFIGPARSER_HPP
+#pragma once
+
 #include "Webserv.hpp"
 #include "Config.hpp"
-
-// ENUM IDEAS
-// Whitespace: Spaces, tabs, newlines (used for token separation but not meaningful).
-// Comments: # starts a comment until the end of the line.
-// Blocks: { and } to define hierarchical structures.
-// Semicolon: ; to end statements.
-// Strings: "value" or 'value' and index.html
-// Numbers: Integers and floating-point numbers, often used for ports and timeouts.
-// Operators: =, ~, !~, ^~, etc., used in regex and conditionals.
-// Paths: /path/to/resource, used for file system paths.
-// URLs:  http://example.com, used for proxy_pass and redirects.
-// Variables: $variable_name, used for dynamic content.
 
 enum tokenType {
 	INIT,
@@ -30,10 +18,9 @@ enum tokenType {
 	SEMICOLON,
 	OPERATOR,
 	STRING,
-	NUMBER, // needed??
-	PATH, // needed??
-	URL, // needed??
-	// VARIABLE, // curently not implemented
+	NUMBER,
+	PATH,
+	URL,
 };
 
 // TOKENS FOR LEXAR
@@ -80,8 +67,7 @@ class ConfigParser {
 
 		void	checkConfig(Config &config);
 		void	setServerName(Config &config);
-		void	setServerMimeTypes();
-		
+
 		void	readMimeToInput(const std::string &filepath);
 		void	parseMimeToTokens();
 		token	getNextMimeToken(token &lastToken);
@@ -89,12 +75,12 @@ class ConfigParser {
 
 		void	checkPort();
 		void	checkHost();
-		void	checkServerName();		// 
+		void	checkServerName();		//
 		void	checkClientBodySize();	// https://nginx.org/en/docs/syntax.html
 
 		// GETTERS
 		std::vector<Config> getConfigs() const { return this->_configs; }
-		
+
 
 		// UTILS
 		void	printInput();
@@ -113,4 +99,3 @@ class ConfigParser {
 				}
 		};
 };
-#endif // CONFIGPARSER_HPP

@@ -1,18 +1,18 @@
 #include "../inc/Config.hpp"
+#include "../inc/ConfigParser.hpp"
 
 std::unordered_map<std::string, std::vector<std::string>> Config::_mimeTypes;
 
 Config::Config() {}
 
-Config::~Config() {
-}
+Config::~Config() {}
 
-void	Config::setMimeTypes(std::unordered_map<std::string, std::vector<std::string>> mimeTypes) {
+void	Config::setMimeTypes(const std::unordered_map<std::string, std::vector<std::string>> &mimeTypes) {
 	_mimeTypes = mimeTypes;
 }
 
 int Config::setDirective(const std::string key, std::vector<std::string> values) {
-	if (key != "error_page" && _directives.find(key) != _directives.end()) // key != "listen" && 
+	if (key != "error_page" && _directives.find(key) != _directives.end())
 		return (-1);
 	for (std::string str: values) {
 		_directives[key].push_back(str);
@@ -61,16 +61,16 @@ void Config::printConfig() {
 
 // ###############################################################
 // ####################     GET RAW DATA     #####################
-const std::unordered_map<std::string, std::vector<std::string>> &Config::getDirectives() {
+const std::unordered_map<std::string, std::vector<std::string>> &Config::getDirectives() const{
 	return (this->_directives);
 }
-const std::unordered_map<std::string, Location>	&Config::getLocations() {
+const std::unordered_map<std::string, Location>	&Config::getLocations() const{
 	return (this->_locations);
 }
-const std::unordered_map<std::string, std::vector<std::string>> &Config::getMimeTypes() {
+const std::unordered_map<std::string, std::vector<std::string>> &Config::getMimeTypes() const{
 	return (this->_mimeTypes);
 }
-const std::unordered_map<std::string, std::vector<std::string>> Config::getLocDirectives(const std::string locKey) {
+const std::unordered_map<std::string, std::vector<std::string>> Config::getLocDirectives(const std::string locKey) const{
 	std::unordered_map<std::string, std::vector<std::string>> locMap = this->_directives;
 	size_t pos = 0;
 	std::string key = "/";
@@ -93,7 +93,7 @@ const std::unordered_map<std::string, std::vector<std::string>> Config::getLocDi
 // ###############################################################
 
 
-int	Config::getPort() {
+int	Config::getPort() const{
 	int port;
 	std::string strPort;
 	auto it = this->_directives.find("listen");
@@ -116,29 +116,27 @@ int	Config::getPort() {
 	return (port);
 }
 
-const std::string	Config::getHost() {
+const std::string	Config::getHost() const{
 	auto it = this->_directives.find("host");
 	if (it != this->_directives.end()) {
 		if (it->second.size() > 0) {
 			return (it->second[0]);
 		}
-	} 
+	}
 	else {
 		auto it = this->_directives.find("listen");
 		if (it != this->_directives.end()) {
 			std::string strHost = it->second[0];
 			size_t pos = strHost.find(':');
 			if (pos != std::string::npos) {
-				strHost = strHost.substr(0, pos);
-				return (strHost);
+				return (strHost.substr(0, pos));
 			}
 		}
 	}
 	return ("");
 }
 
-const std::string	Config::getServerName() {
-	// return ((*(this->_directives.find("server_name"))).second.front());
+const std::string	Config::getServerName() const{
 	auto it = this->_directives.find("server_name");
 	if (it != this->_directives.end()) {
 		if (it->second.size() > 0) {
@@ -149,7 +147,7 @@ const std::string	Config::getServerName() {
 }
 
 // client_max_body_size 10M;
-std::uint64_t	Config::getClientBodySize(const std::string locKey) {
+std::uint64_t	Config::getClientBodySize(const std::string locKey) const{
 	std::unordered_map<std::string, std::vector<std::string>> dirMap = this->getLocDirectives(locKey);
 	auto it = dirMap.find("client_max_body_size");
 	std::string strSize;
@@ -172,7 +170,7 @@ std::uint64_t	Config::getClientBodySize(const std::string locKey) {
 }
 
 // return 301 http://example.com/newpage;
-const std::vector<std::string>	Config::getRedirect(const std::string locKey) {
+const std::vector<std::string>	Config::getRedirect(const std::string locKey) const{
 	std::unordered_map<std::string, std::vector<std::string>> dirMap = this->getLocDirectives(locKey);
 	auto it = dirMap.find("return");
 	if (it != dirMap.end()) {
@@ -184,7 +182,7 @@ const std::vector<std::string>	Config::getRedirect(const std::string locKey) {
 }
 
 // root /tmp/www;
-const std::vector<std::string>	Config::getRoot(const std::string locKey) {
+const std::vector<std::string>	Config::getRoot(const std::string locKey) const{
 	std::unordered_map<std::string, std::vector<std::string>> dirMap = this->getLocDirectives(locKey);
 	auto it = dirMap.find("root");
 	if (it != dirMap.end()) {
@@ -196,7 +194,7 @@ const std::vector<std::string>	Config::getRoot(const std::string locKey) {
 }
 
 // allow_methods  DELETE POST GET;
-const std::vector<std::string>	Config::getMethods(const std::string locKey) {
+const std::vector<std::string>	Config::getMethods(const std::string locKey) const{
 	std::unordered_map<std::string, std::vector<std::string>> dirMap = this->getLocDirectives(locKey);
 	auto it = dirMap.find("allow_methods");
 	if (it != dirMap.end()) {
@@ -208,7 +206,7 @@ const std::vector<std::string>	Config::getMethods(const std::string locKey) {
 }
 
 // index index.html index.php;
-const std::vector<std::string>	Config::getIndex(const std::string locKey) {
+const std::vector<std::string>	Config::getIndex(const std::string locKey) const{
 	std::unordered_map<std::string, std::vector<std::string>> dirMap = this->getLocDirectives(locKey);
 	auto it = dirMap.find("index");
 	if (it != dirMap.end()) {
@@ -220,8 +218,10 @@ const std::vector<std::string>	Config::getIndex(const std::string locKey) {
 }
 
 // autoindex on;
-bool	Config::getAutoindex(const std::string locKey) {
+bool	Config::getAutoindex(const std::string locKey) const{
+	std::cout << "getAutoindex" << std::endl;
 	std::unordered_map<std::string, std::vector<std::string>> dirMap = this->getLocDirectives(locKey);
+	std::cout << "check in autoindex" << std::endl;
 	auto it = dirMap.find("autoindex");
 	if (it != dirMap.end()) {
 		if (it->second.size() > 0) {
@@ -235,7 +235,7 @@ bool	Config::getAutoindex(const std::string locKey) {
 }
 
 // error_page 404 /tmp/www/404.html;
-const std::string	Config::getErrorPage(int errorCode) {
+const std::string	Config::getErrorPage(int errorCode) const {
 	auto it = this->_directives.find("error_page");
 	if (it != this->_directives.end()) {
 		for (size_t i = 0; i < it->second.size(); i++) {

@@ -42,6 +42,7 @@ ConfigParser::ConfigParser(const std::string& filepath) {
 	parseInputToTokens();
 	// printTokens(this->_tokens);
 	parseTokenToConfig();
+	// std::cout << "check1" << std::endl;
 	debugConfigPrint(this->_configs);
 	// _configs[0].getLocDirectives("/api/test/test2");
 }
@@ -165,36 +166,29 @@ void	ConfigParser::errorToken(token token, std::string msg) {
 	throw ConfigParser::ConfigParserException("Unexpected token at Ln " + std::to_string(line) + ", Col " + std::to_string(col) + " " + msg);
 }
 
-// bool isValidIPv6(const std::string& ip) {
-// 	std::regex ipv6_regex(R"((^|:)([0-9a-fA-F]{1,4}:){7}([0-9a-fA-F]{1,4}|:)|(^|:)([0-9a-fA-F]{1,4}:){1,7}:|(^|:)([0-9a-fA-F]{1,4}:){1,6}(:[0-9a-fA-F]{1,4}){1,2}|(^|:)([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,3}|(^|:)([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,4}|(^|:)([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,5}|(^|:)([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,6}|(^|:)(([0-9a-fA-F]{1,4}:){7}|:)|(^|:)(([0-9a-fA-F]{1,4}:){6}|:([0-9a-fA-F]{1,4}:){0,5})|(^|:)(([0-9a-fA-F]{1,4}:){5}|:([0-9a-fA-F]{1,4}:){0,4})|(^|:)(([0-9a-fA-F]{1,4}:){4}|:([0-9a-fA-F]{1,4}:){0,3})|(^|:)(([0-9a-fA-F]{1,4}:){3}|:([0-9a-fA-F]{1,4}:){0,2})|(^|:)(([0-9a-fA-F]{1,4}:){2}|:([0-9a-fA-F]{1,4}:))|(:(:[0-9a-fA-F]{1,4}){2
-// 		}(:[0-9a-fA-F]{1,4}){0,5}|:)|(^|:)(([0-9a-fA-F]{1,4}:){1}|:([0-9a-fA-F]{1,4}:))|(:(:[0-9a-fA-F]{1,4}){3}(:[0-9a-fA-F]{1,4}){0,4}|:)|(^|:)(([0-9a-fA-F]{1,4}:){1}|:([0-9a-fA-F]{1,4}:))|(:(:[0-9a-fA-F]{1,4}){4}(:[0-9a-fA-F]{1,4}){0,3}|:)|(^|:)(([0-9a-fA-F]{1,4}:){1}|:([0-9a-fA-F]{1,4}:))|(:(:[0-9a-fA-F]{1,4}){5}(:[0-9a-fA-F]{1,4}){0,2}|:)|(^|:)(([0-9a-fA-F]{1,4}:){1}|:([0-9a-fA-F]{1,4}:))|(:(:[0-9a-fA-F]{1,4}){6}(:[0-9a-fA-F]{1,4}){0,1}|:)|(^|:)(([0-9a-fA-F]{1,4}:){1}|:([0-9a-fA-F]{1,4}:))|(:(:[0-9a-fA-F]{1,4}){7}|:)?)$)");
-// 	return std::regex_match(ip, ipv6_regex);
+// bool isValidIPv4(const std::string& ip) {
+// 	std::istringstream ss(ip);
+// 	std::string token;
+// 	int count = 0;
+
+// 	while (std::getline(ss, token, '.')) {
+// 		++count;
+// 		if (count > 4)
+// 			return (false);
+// 		if (token.empty() || token.length() > 3)
+// 			return (false);
+// 		for (char c : token) {
+// 			if (!isdigit(static_cast<unsigned char>(c)))
+// 				return (false);
+// 		}
+// 		if (token.length() > 1 && token[0] == '0')
+// 			return (false);
+// 		int num = std::stoi(token);
+// 		if (num < 0 || num > 255)
+// 			return (false);
+// 	}
+// 	return (true);
 // }
-
-
-bool isValidIPv4(const std::string& ip) {
-	std::istringstream ss(ip);
-	std::string token;
-	int count = 0;
-
-	while (std::getline(ss, token, '.')) {
-		++count;
-		if (count > 4)
-			return (false);
-		if (token.empty() || token.length() > 3)
-			return (false);
-		for (char c : token) {
-			if (!isdigit(static_cast<unsigned char>(c)))
-				return (false);
-		}
-		if (token.length() > 1 && token[0] == '0')
-			return (false);
-		int num = std::stoi(token);
-		if (num < 0 || num > 255)
-			return (false);
-	}
-	return (true);
-}
 
 void	ConfigParser::checkConfig(Config &config) {
 	size_t indexConf = _configs.size() + 1;
@@ -207,8 +201,6 @@ void	ConfigParser::checkConfig(Config &config) {
 			throw ConfigParser::ConfigParserException("Port out of valid range.");
 		if (config.getHost().empty())
 			throw ConfigParser::ConfigParserException("Host is not defined.");
-		else if (!isValidIPv4(config.getHost()))
-			throw ConfigParser::ConfigParserException("Host is not a valid IPv4 address.");
 		if (config.getRoot("/").empty())
 			throw ConfigParser::ConfigParserException("Root is not defined.");
 	} catch (ConfigParser::ConfigParserException &e) {
@@ -319,9 +311,9 @@ void ConfigParser::parseMimeToTokens() {
 void	ConfigParser::getTokenPos(token token, int &line, int &col) {
 	line = 1;
 	col = 1;
-	for (std::string::iterator i = this->_input.begin(); i != this->_input.end() && i != token.itStart; i++) {
+	for (std::string::iterator it = this->_input.begin(); it != this->_input.end() && it != token.itStart; it++) {
 		col++;
-		if (*i == '\n') {
+		if (*it == '\n') {
 			line++;
 			col = 0;
 		}
@@ -484,10 +476,6 @@ std::unordered_map<std::string, std::vector<std::string>>	ConfigParser::parseMim
 	return (mapReturn);
 }
 
-// void ConfigParser::setServerMimeTypes() {
-// 	it->setMimeTypes(this->_mimeTypes);
-// }
-
 void	ConfigParser::parseTokenToConfig() {
 	eraseToken(this->_tokens, WHITE_SPACE);
 	eraseToken(this->_tokens, COMMENT);
@@ -496,18 +484,18 @@ void	ConfigParser::parseTokenToConfig() {
 	for (std::vector<token>::iterator it = this->_tokens.begin(); it != this->_tokens.end(); ++it) {
 		if (it->type == HTTP) {
 			if (inHttp)
-				errorToken(*it, "Unexpected: http");
+			errorToken(*it, "Unexpected: http");
 			inHttp = true;
 			moveOneTokenSafly(this->_tokens, it);
 			if (it->type != BLOCK_OPEN)
-				errorToken(*it, "Expected: {");
+			errorToken(*it, "Expected: {");
 		}
 		else if (it->type == INCLUDE) {
 			if (!inHttp || mimeSet)
-				errorToken(*it, "Unexpected: include");
+			errorToken(*it, "Unexpected: include");
 			moveOneTokenSafly(this->_tokens, it);
 			if (it->type != STRING && it->type != PATH)
-				errorToken(*it, "Expected: STRING or PATH");
+			errorToken(*it, "Expected: STRING or PATH");
 			readMimeToInput(it->value);
 			parseMimeToTokens();
 			this->_mimeTypes = parseMimeToken();
