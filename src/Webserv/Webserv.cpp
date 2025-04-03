@@ -117,6 +117,8 @@ void	Webserv::mainLoop() {
 				_clients.find(fd)->second.handle(ev);
 			} else if (_clients.find(ev.data.u32) != _clients.end()) {
 				_clients.find(ev.data.u32)->second.handle(ev);
+				if (_clients.find(ev.data.u32)->second.isDone())
+					_clients.erase(_clients.find(ev.data.u32)); // REMOVE !!!
 				// client pipe ready
 			} else {
 				throw std::runtime_error("mainLoop(): fd not found");

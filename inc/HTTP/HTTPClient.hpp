@@ -35,7 +35,7 @@
 # include "HTTPRequest.hpp"
 # include "HTTPParser.hpp"
 
-# define READSIZE 100
+# define READSIZE 1000
 # define READY true
 
 enum e_state {
@@ -61,7 +61,7 @@ class HTTPClient {
 			SharedFd clientFd,
 			SharedFd serverFd,
 			std::function<void(struct epoll_event, const SharedFd&)> addToEpoll_cb,
-			std::function<const Config* (const SharedFd& serverSock, const std::string& serverName)> getConfig_cb
+			std::function<const Config* (const SharedFd&, const std::string&)> getConfig_cb
 		);
 		HTTPClient(const HTTPClient &other);
 		~HTTPClient( void );
@@ -73,7 +73,7 @@ class HTTPClient {
 		void		writeTo( int fd );
 		std::string	readFrom( int fd );
 
-		bool			parsing( int fd );
+		bool			parsing( void );
 		bool			cgi( int fd );
 		void			responding( bool cgi_used, int fd );
 		void			cgiresponse( void );
@@ -92,6 +92,6 @@ class HTTPClient {
 		HTTPResponse				responseGenerator_;
 		const Config				*config_;
 
-		std::function<void(const std::string& serverName)> _setConfig_cb;
-		std::function<const Config* (const SharedFd& serverSock, const std::string& serverName)> getConfig_cb_;
+		std::function<void(struct epoll_event, const SharedFd&)>  			addToEpoll_cb_;
+		std::function<const Config* (const SharedFd&, const std::string&)>	getConfig_cb_;
 };

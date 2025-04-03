@@ -25,21 +25,22 @@
 # define TO_CHILD_WRITE 3
 #endif
 
+typedef std::function<void(struct epoll_event, const SharedFd&)> ADD_EPOLL_CBFUNCTION;
+
 class CGIPipes {
 	private:
-		std::vector<int>											pipes_;
-		std::function<void(struct epoll_event, const SharedFd&)>	pipe_callback_;
-		SharedFd													server_fd_;
+		std::vector<int>		pipes_;
+		ADD_EPOLL_CBFUNCTION	addToEpoll_cb_;
+		SharedFd				client_sock_;
 
 	public:
 		CGIPipes( void );
 		~CGIPipes( void );
 
-		void				setCallbackFunction( std::function<void(struct epoll_event, \
-								const SharedFd&)>  callback, const SharedFd& server_fd );
+		void	setCallbackFunction( ADD_EPOLL_CBFUNCTION callback, const SharedFd& client_sock );
+		void	addNewPipes( void );
+		void	addPipesToEpoll( void );
+		void	closeAllPipes( void );
 		
-		void				addNewPipes( void );
-		void				addPipesToEpoll( void );
-		void				closeAllPipes( void );
 		std::vector<int>	getPipes( void );
 };

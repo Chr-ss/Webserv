@@ -6,17 +6,20 @@ HTTPClient::HTTPClient(
 	std::function<void(struct epoll_event, const SharedFd&)>  addToEpoll_cb,
 	std::function<const Config* (const SharedFd& serverSock, const std::string& serverName)> getConfig_cb
 	) : clientSock_(clientFd), serverSock_(serverFd), \
-		responseGenerator_(), getConfig_cb_(getConfig_cb) {
-	pipes_.setCallbackFunction(addToEpoll_cb, serverFd);
+		responseGenerator_(), addToEpoll_cb_(addToEpoll_cb), getConfig_cb_(getConfig_cb) {
+	addToEpoll_cb_ = addToEpoll_cb;
 	STATE_ = RECEIVING;
 	config_ = NULL;
 }
 
-HTTPClient::HTTPClient(const HTTPClient& other) : STATE_(other.STATE_),
-	clientSock_(other.clientSock_), serverSock_(other.serverSock_), \
+HTTPClient::HTTPClient(const HTTPClient& other) : \
+	STATE_(other.STATE_),
+	clientSock_(other.clientSock_), \
+	serverSock_(other.serverSock_), \
 	responseGenerator_(other.responseGenerator_), \
-	config_(other.config_), getConfig_cb_(other.getConfig_cb_) {
-}
+	config_(other.config_), \
+	addToEpoll_cb_(other.addToEpoll_cb_), \
+	getConfig_cb_(other.getConfig_cb_) {}
 
 HTTPClient::~HTTPClient(void) { }
 
@@ -47,7 +50,6 @@ void	HTTPClient::writeTo(int fd) {
 		throw std::runtime_error("write(): " + std::string(strerror(errno)));
 	
 	// check if everything can be written in once?
-	STATE_ = DONE;
 }
 
 std::string	HTTPClient::readFrom(int fd) {
@@ -76,10 +78,10 @@ void	HTTPClient::handle(const epoll_event &event) {
 			if (!parser_.isDone()) {
 				return;
 			}
-			is_cgi_request = parsing(event.data.fd); // TODO: rename
+			is_cgi_request = parsing(); // TODO: rename
 		case PROCESS_CGI:
-			if (is_cgi_request && cgi(event.data.fd) != READY)
-				return ;
+			if (is_cgi_request)
+				cgi(event.data.fd);
 		case RESPONSE:
 			responding(is_cgi_request, event.data.fd);
 		case DONE:
@@ -88,7 +90,7 @@ void	HTTPClient::handle(const epoll_event &event) {
 }
 
 /// @brief parse the HTTP request header and checks if it is a cgi target
-bool	HTTPClient::parsing(int fd) {
+bool	HTTPClient::parsing(void) {
 	request_ = parser_.getParsedRequest();
 	responseGenerator_.setConfig(config_);
 	if (!responseGenerator_.isCGI(request_))
@@ -99,7 +101,6 @@ bool	HTTPClient::parsing(int fd) {
 	else
 	{
 		STATE_ = PROCESS_CGI;
-		cgi(fd);
 		return (true);
 	}
 }
@@ -121,12 +122,12 @@ void	HTTPClient::responding(bool cgi_used, int fd) {
 bool	HTTPClient::cgi(int fd) {
 	std::vector<std::string>	env_strings;
 
-	pipes_.addNewPipes();
-	cgi_ = std::make_unique<CGI>(request_.body, pipes_.getPipes());
-	std::cout << "IT is a cgi!" << std::endl;
-	std::cout << "realy?" << std::endl;
+	if (cgi_ == NULL)
+	{
+		pipes_.setCallbackFunction(addToEpoll_cb_, clientSock_);
+		cgi_ = std::make_unique<CGI>(request_.body, pipes_.getPipes());
+	}
 	cgi_->handle_cgi(request_, fd);
-	std::cout << "handled!" << std::endl;
 	return (cgi_->isReady());
 }
 
@@ -137,4 +138,4 @@ void	HTTPClient::cgiresponse(void) {
 	message_que_.push_back(cgi_->getResponse());
 }
 
-const Config	*HTTPClient::getConfig( void ) const { return (config_); }
+const Config	*HTTPClient::getConfig(void) const { return (config_); }

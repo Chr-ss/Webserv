@@ -30,6 +30,7 @@ void	HTTPParser::splitHeaderBody(void) {
 
 /// @brief if available, checks if content length is same as size body
 void	HTTPParser::verifyBodyCompletion(void) {
+	std::cerr << "content lenght: " << content_length_ << " result: " << result_.body.size()<< std::endl;
 	if (content_length_ > 0)
 	{
 		if (result_.body.size() == content_length_)
@@ -389,6 +390,10 @@ void	HTTPParser::addBufferToParser(std::string &buff, HTTPClient *client) {
 		PARSE_STATE_ = DONE_PARSING;
 	}
 	verifyBodyCompletion();
+	if (PARSE_STATE_ == DONE_PARSING)
+	{
+		std::cerr << "target" << result_.request_target << std::endl;
+	}
 }
 
 void	HTTPParser::clearParser(void) {
