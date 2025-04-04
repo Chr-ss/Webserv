@@ -1,5 +1,6 @@
 
 #include "../../inc/Webserv/Webserv.hpp"
+#include <sys/epoll.h>
 
 std::atomic<bool> keepalive(true);
 
@@ -157,6 +158,33 @@ void	Webserv::_delClient(const SharedFd& clientSock) {
 	_clients.erase(it);
 }
 
+void	Webserv::_handleServerReady(SharedFd fd) {
+	SharedFd clientSock = accept(fd.get(), nullptr, nullptr);
+	if (clientSock == -1)
+		throw std::runtime_error(std::string("accept(): ") + strerror(errno));
+	_addClient(clientSock, fd);
+}
+
+void	Webserv::_handleClientReady(const struct epoll_event& ev) {
+	SharedFd fd = ev.data.fd;
+	auto it = _clients.find(fd);
+	if (it == _clients.end()) {
+		// check whether client pipe is ready
+		fd = ev.data.u32;
+		it = _clients.find(fd);
+		if (it == _clients.end()) {
+			throw std::runtime_error("_handleClientReady(): unvalid fd");
+		}
+	}
+
+	auto& client = it->second;
+	client.handle(ev);
+	// TODO: add logic to remove pipes when client is deleted - e.g. through callback invoked from client destructor
+	if (client.isDone()) {
+		_delClient(fd);
+	}
+}
+
 void	Webserv::eventLoop() {
 	std::signal(2, signalhandler);
 	
@@ -170,25 +198,12 @@ void	Webserv::eventLoop() {
 			// 	<< ((ev.events & EPOLLOUT) ? "EPOLLOUT " : " ")
 			// 	<< ((ev.events & (EPOLLHUP | EPOLLERR)) ? "EPOLLHUP | EPOLLERR" : "") << std::endl;
 			// #endif
+
 			SharedFd fd = ev.data.fd;
 			if (_servers.find(fd) != _servers.end()) {
-				// server socket ready
-				SharedFd clientSock = accept(fd.get(), nullptr, nullptr);
-				if (clientSock == -1)
-					throw std::runtime_error(std::string("accept(): ") + strerror(errno));
-				_addClient(clientSock, fd);
-			} else if (_clients.find(fd) != _clients.end()) {
-				//  client socket ready
-				auto& client = _clients.find(fd)->second;
-				client.handle(ev);
-				// TODO: add logic to remove pipes when client is deleted - e.g. through callback invoked from client destructor
-				if (client.isDone())
-					_delClient(fd);
-			} else if (_clients.find(ev.data.u32) != _clients.end()) {
-				// client pipe ready
-				_clients.find(ev.data.u32)->second.handle(ev);
+				_handleServerReady(fd);
 			} else {
-				throw std::runtime_error("eventLoop(): fd not found");
+				_handleClientReady(ev);
 			}
 		}
 	}

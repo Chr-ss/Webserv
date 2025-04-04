@@ -44,4 +44,6 @@ private:
 
 	void	_addClient(const SharedFd& clientSock, const SharedFd& servSock);
 	void	_delClient(const SharedFd& fd);
+	void	_handleServerReady(SharedFd fd);
+	void	_handleClientReady(const struct epoll_event& ev);
 };
