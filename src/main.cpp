@@ -1,4 +1,5 @@
 #include "../inc/Webserv/Webserv.hpp"
+#include <cstdlib>
 
 std::atomic<bool> keep_alive(true);
 
@@ -9,21 +10,19 @@ void	signal_handler(int signum)
 }
 
 int	save_main(int argc, char **argv) {
-	std::string path;
+	if (argc > 2) {
+		std::cerr << "Usage: ./webserv <path_to_config>" << std::endl;
+		exit(EXIT_FAILURE);
+	}
 
-	if (argc == 1)
-		path = DEFAULT_CONFIGFILE;
-	else if (argc == 2)
-		path = argv[1];
-	else
-		throw std::invalid_argument("Wrong amount config files given");
+	std::string path = (argc == 2) ? argv[1] : DEFAULT_CONFIGFILE;
 
 	std::signal(SIGINT, signal_handler);
 
 	std::cerr << "Webserver starting ... with config: " << path << std::endl;
 	Webserv	webserver(path);
 	std::cerr << "Webserver has started" << std::endl;
-	webserver.mainLoop();
+	webserver.eventLoop();
 	return (0);
 }
 

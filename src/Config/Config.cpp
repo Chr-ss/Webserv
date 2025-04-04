@@ -237,7 +237,7 @@ const std::string	Config::getErrorPage(int errorCode) const {
 	auto it = this->_directives.find("error_page");
 	if (it != this->_directives.end()) {
 		for (size_t i = 0; i < it->second.size(); i += 2) {
-			if (std::stoi(it->second[i]) == errorCode) {
+			if (it->second[i] == std::to_string(errorCode)) {
 				return (it->second[i + 1]);
 			}
 		}

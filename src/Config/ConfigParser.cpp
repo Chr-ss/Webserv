@@ -42,9 +42,8 @@ ConfigParser::ConfigParser(const std::string& filepath) {
 	parseInputToTokens();
 	// printTokens(this->_tokens);
 	parseTokenToConfig();
-	// std::cout << "check1" << std::endl;
+	this->_configs[0].setMimeTypes(this->_mimeTypes);
 	// debugConfigPrint(this->_configs);
-	// _configs[0].getLocDirectives("/api/test/test2");
 }
 
 ConfigParser::~ConfigParser() {
@@ -197,7 +196,7 @@ void	ConfigParser::checkConfig(Config &config) {
 			if (it->getHost() == config.getHost() && it->getPort() == config.getPort() && it->getServerName() == config.getServerName())
 				throw ConfigParser::ConfigParserException("Duplicate server block with same host, port and servername.");
 		}
-		if (config.getPort() < 0 || config.getPort() > 65535)
+		if (config.getPort() <= 0 || config.getPort() > 65535)
 			throw ConfigParser::ConfigParserException("Port out of valid range.");
 		if (config.getHost().empty())
 			throw ConfigParser::ConfigParserException("Host is not defined.");
@@ -220,11 +219,11 @@ token ConfigParser::getNextToken(token &lastToken, const std::regex &url_regex, 
 	newToken.itEnd = std::find_if(newToken.itStart, this->_input.end(), [](char c) {
 		return (c == ' ' || c == '\n' || c == '\t' || c == '{' || c == '}' || c == ';' || c == '#');
 	});
-	if (newToken.itStart == newToken.itEnd) {
+	if (newToken.itStart != this->_input.end() && newToken.itStart == newToken.itEnd) {
 		newToken.itEnd++;
 	}
 	newToken.value = std::string(newToken.itStart, newToken.itEnd);
-	if (newToken.itEnd == this->_input.end()) {
+	if (newToken.itStart == this->_input.end()) {
 		newToken.type = EOF_TOKEN;
 	} else if (newToken.value == "server") {
 		newToken.type = SERVER;
@@ -339,9 +338,7 @@ void ConfigParser::parseTokenToDirective(std::vector<token>::iterator &it, Confi
 
 void	ConfigParser::moveOneTokenSafly(std::vector<token> &tokens, std::vector<token>::iterator &it) {
 	it++;
-	if (it == tokens.end())
-		errorToken(*it, "Unexpected EOF!");
-	else if (it->type == EOF_TOKEN)
+	if (it == tokens.end() || it->type == EOF_TOKEN)
 		errorToken(*it, "Unexpected EOF!");
 }
 
@@ -355,10 +352,12 @@ void ConfigParser::parseTokenToLocDir(std::vector<token>::iterator &it, Location
 			break;
 		values.push_back(it->value);
 	}
-	if (it->type != SEMICOLON)
+	if (it->type != SEMICOLON) {
 		errorToken(*it, "Expected: ;");
-	if (loc.directives.find(key) != loc.directives.end())
+	}
+	if (loc.directives.find(key) != loc.directives.end()) {
 		errorToken(*key_it, "Info: duplicate directive key.");
+	}
 	loc.directives[key] = values;
 }
 
@@ -370,28 +369,28 @@ void ConfigParser::parseTokenToLocation(std::vector<token>::iterator &it, Config
 	if (it->value == "=") {
 		newloc.strict_match = 1;
 		moveOneTokenSafly(this->_tokens, it);
-	} else
+	} else {
 		newloc.strict_match = 0;
-
+	}
 	if (it->type == PATH) {
 		path_key = it->value;
 		moveOneTokenSafly(this->_tokens, it);
-	} else
+	} else {
 		errorToken(*it, "Expected: PATH");
-
-	if (it->type == BLOCK_OPEN)
+	}
+	if (it->type == BLOCK_OPEN) {
 		moveOneTokenSafly(this->_tokens, it);
-	else
+	} else {
 		errorToken(*it, "Expected: {");
-
+	}
 	for (;it != this->_tokens.end(); it++) {
-		if (it->type == STRING)
+		if (it->type == STRING) {
 			parseTokenToLocDir(it, newloc);
-		else if (it->type == BLOCK_CLOSE) {
+		} else if (it->type == BLOCK_CLOSE) {
 			break;
-		}
-		else
+		} else {
 			errorToken(*it, "Expected STRING or }");
+		}
 	}
 	newServer.setLocation(path_key, newloc);
 }
@@ -404,15 +403,14 @@ void ConfigParser::parseTokenToServer(std::vector<token>::iterator &it) {
 		moveOneTokenSafly(this->_tokens, it);
 	Config newServer;
 	for (;it != this->_tokens.end(); ++it) {
-		if (it->type == STRING)
+		if (it->type == STRING) {
 			parseTokenToDirective(it, newServer);
-		else if (it->type == LOCATION)
+		} else if (it->type == LOCATION) {
 			parseTokenToLocation(it, newServer);
-		else if (it->type == BLOCK_CLOSE) {
+		} else if (it->type == BLOCK_CLOSE) {
 			it++;
 			break;
-		}
-		else {
+		} else {
 			std::cout << "TEST: " << it->value << std::endl;
 			errorToken(*it, "Expected STRING, LOCATION or }");
 		}
@@ -483,43 +481,49 @@ void	ConfigParser::parseTokenToConfig() {
 	bool mimeSet = false;
 	for (std::vector<token>::iterator it = this->_tokens.begin(); it != this->_tokens.end(); ++it) {
 		if (it->type == HTTP) {
-			if (inHttp)
-			errorToken(*it, "Unexpected: http");
+			if (inHttp) {
+				errorToken(*it, "Unexpected: http");
+			}
 			inHttp = true;
 			moveOneTokenSafly(this->_tokens, it);
-			if (it->type != BLOCK_OPEN)
-			errorToken(*it, "Expected: {");
+			if (it->type != BLOCK_OPEN) {
+				errorToken(*it, "Expected: {");
+			}
 		}
 		else if (it->type == INCLUDE) {
-			if (!inHttp || mimeSet)
-			errorToken(*it, "Unexpected: include");
+			if (!inHttp || mimeSet) {
+				errorToken(*it, "Unexpected: include");
+			}
 			moveOneTokenSafly(this->_tokens, it);
-			if (it->type != STRING && it->type != PATH)
-			errorToken(*it, "Expected: STRING or PATH");
+			if (it->type != STRING && it->type != PATH) {
+				errorToken(*it, "Expected: STRING or PATH");
+			}
 			readMimeToInput(it->value);
 			parseMimeToTokens();
 			this->_mimeTypes = parseMimeToken();
 			mimeSet = true;
 			moveOneTokenSafly(this->_tokens, it);
-			if (it->type != SEMICOLON)
+			if (it->type != SEMICOLON) {
 				errorToken(*it, "Expected: ;");
+			}
 		}
 		else if (it->type == SERVER) {
-			if (!inHttp)
+			if (!inHttp) {
 				errorToken(*it, "Unexpected: server");
+			}
 			parseTokenToServer(it);
 			it--;
 		}
-		else if (it->type == BLOCK_CLOSE) {
-			if (!inHttp)
-				errorToken(*it, "Unexpected: }");
-			inHttp = false;
+		else if (!inHttp && it->type == BLOCK_CLOSE) {
 			moveOneTokenSafly(this->_tokens, it);
-			if (it->type != EOF_TOKEN)
-				errorToken(*it, "Expected: EOF");
 		}
-		else if (it->type == EOF_TOKEN) {
-			break;
+		else if (inHttp && it->type == BLOCK_CLOSE) {
+			inHttp = false;
+			it++;
+			if (it->type != EOF_TOKEN) {
+				errorToken(*it, "Expected: EOF");
+			}
+			break ;
 		}
 		else {
 			errorToken(*it, "Unexpected token");
@@ -532,5 +536,4 @@ void	ConfigParser::parseTokenToConfig() {
 		parseMimeToTokens();
 		this->_mimeTypes = parseMimeToken();
 	}
-	this->_configs[0].setMimeTypes(this->_mimeTypes);
 }

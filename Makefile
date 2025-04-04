@@ -1,15 +1,20 @@
-NAME		=	webserv
-RM			=	rm -rf
-CPP			=	c++
-CPPFLAGS	=	-Wall -Wextra -Werror -std=c++17 -g
+NAME		:=	webserv
+RM			:=	rm -rf
+CPP			:=	c++
+CPPFLAGS	:=	-Wall -Wextra -Werror -std=c++17
+DEBUG 		?= 0
+ifeq ($(DEBUG), 1)
+CPP			:= g++
+CPPFLAGS	:= -g -std=c++17
+endif
 
-SRCDIR		=	src
-SRC			=	$(shell find $(SRCDIR) -iname "*.cpp")
+SRCDIR		:=	src
+SRC			:=	$(shell find $(SRCDIR) -iname "*.cpp")
 
-INCL        =   -I./inc
+INCL        :=   -I./inc
 
-OBJDIR		=	.build
-OBJ			=	$(SRC:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
+OBJDIR		:=	.build
+OBJ			:=	$(SRC:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 
 all:		$(NAME)
 

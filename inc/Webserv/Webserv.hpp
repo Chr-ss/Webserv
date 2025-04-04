@@ -3,18 +3,22 @@
 #include <unordered_map>
 #include <atomic>
 #include <csignal>
+#include <netdb.h>
+#include <unordered_set>
 
 #include "../Config/ConfigParser.hpp"
 #include "../Config/Config.hpp"
 #include "../HTTP/HTTPClient.hpp"
 #include "Epoll.hpp"
 #include "SharedFd.hpp"
-#include "Socket.hpp"
-#include "sock.hpp"
 #include "Colors.hpp"
+
+// C libs
 
 // DEFAULTS
 # define DEFAULT_PORT 8080
+// # define DEFAULT_HOST ????
+// # define DEFAULT_SERVER_NAME ????
 # define DEFAULT_CLIENT_BODY_SIZE 1048576 // 1m or 1MB
 # define DEFAULT_INDEX "index.html"
 # define DEFAULT_AUTOINDEX false
@@ -31,7 +35,7 @@ public:
 	Webserv& operator=(const Webserv& other) = delete;
 	~Webserv();
 
-	void	mainLoop();
+	void	eventLoop();
 
 private:
 	std::unordered_map<SharedFd, std::vector<Config>>	_servers;
