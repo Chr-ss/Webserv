@@ -66,17 +66,22 @@ std::string	HTTPClient::readFrom(int fd) {
  */
 void	HTTPClient::handle(const epoll_event &event) {
 	std::string	data;
-	HTTPRequest	request;
 	static bool	is_cgi_request = false;
-	
+
 	switch (STATE_) {
 		case RECEIVING:
 			data = readFrom(event.data.fd);
-			parser_.addBufferToParser(data, this);
+			// TODO: @merel: this function is doing way more then adding the buffer
+			// it could be an idea, to simplify this function alot to really just
+			// add the buffer and then have another function parser_.process or sth like that
+			// which is then processing the newly added buffer or simply renaming it to processData
+			// parser_.processData(data);
+			parser_.addBufferToParser(data, this); // TODO: @merel. could be just called 'addBuffer' - since Parser already object type and name
 			if (!parser_.isDone()) {
 				return;
 			}
-			is_cgi_request = parsing(event.data.fd); // TODO: rename
+			 // TODO: @merel: I would rename this function as it's actually not really doing any of the parsing
+			is_cgi_request = parsing(event.data.fd);
 		case PROCESS_CGI:
 			if (is_cgi_request && cgi(event.data.fd) != READY)
 				return ;

@@ -415,7 +415,7 @@ void	HTTPParser::addBufferToParser(std::string &buff, HTTPClient *client) {
 	}
 	// TODO: @merel. probaly rather 'checkBodyCompletion' no? Or should the body
 	// be completed here normally and we are just verifying whether this is the case
-	// could also be rewritten to this, to make it clearer that we are changing the parsing state
+	// could be rewritten to
 	// if (isBodyComplete())
 	// 	PARSE_STATE_ = DONE_PARSING;
 	verifyBodyCompletion();
