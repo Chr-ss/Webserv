@@ -19,7 +19,6 @@ echo -e "${BLU}\tINVALID TESTER${RESET}"
 x=0
 
 for config in $configs; do
-    x=$((x + 1))
 
     err_msg=$("$exe" "$config" 2>&1)
 
@@ -29,6 +28,7 @@ for config in $configs; do
     else
         echo -e "${GRN}${x} : ${config} :\n${err_msg}${RESET}"
     fi
+    x=$((x + 1))
 done
 
 
