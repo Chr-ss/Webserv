@@ -4,7 +4,9 @@
 #include "SharedFd.hpp"
 
 #include <sys/types.h>
-#include <sys/epoll.h>
+#ifndef CONFTESTER
+	#include <sys/epoll.h>
+#endif
 #include <string.h>
 #include <stdexcept>
 #include <unistd.h>

@@ -2,10 +2,10 @@ NAME		:=	webserv
 RM			:=	rm -rf
 CPP			:=	c++
 CPPFLAGS	:=	-Wall -Wextra -Werror -std=c++17
-DEBUG 		?= 0
+DEBUG 		?=	0
 ifeq ($(DEBUG), 1)
-CPP			:= g++
-CPPFLAGS	:= -g -std=c++17
+CPP			:=	g++
+CPPFLAGS	:=	-g	-std=c++17
 endif
 
 SRCDIR		:=	src
@@ -13,8 +13,14 @@ SRC			:=	$(shell find $(SRCDIR) -iname "*.cpp")
 
 INCL        :=   -I./inc
 
+conftester:		CPPFLAGS	+=	-DCONFTESTER
+				SRC			=	src/Config/Config.cpp src/Config/ConfigParser.cpp src/main.cpp
+conftester:		$(NAME)
+				@./test_configs.sh
+
 OBJDIR		:=	.build
 OBJ			:=	$(SRC:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
+
 
 all:		$(NAME)
 
@@ -40,7 +46,7 @@ re:			fclean all
 info-%:
 	$(info $($*))
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re conftester
 .SILENT:
 
 # ----------------------------------- colors --------------------------------- #

@@ -24,7 +24,9 @@
 # include <netinet/in.h>
 # include <arpa/inet.h>
 # include <string.h>
-# include <sys/epoll.h>
+#ifndef CONFTESTER
+	# include <sys/epoll.h>
+#endif
 
 # include "../Config/Config.hpp"
 # include "../Webserv/Epoll.hpp"

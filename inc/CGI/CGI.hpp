@@ -8,7 +8,9 @@
 
 # include <unistd.h>
 # include <sys/wait.h>
-# include <sys/epoll.h>
+#ifndef CONFTESTER
+	#include <sys/epoll.h>
+#endif
 
 # include "../HTTP/HTTPRequest.hpp"
 
@@ -38,7 +40,9 @@ class CGI {
 		int					status_;
 		std::string 		response_;
 		const std::string	post_data_;
-		epoll_event			epoll_event_pipe_[2];
+		#ifndef CONFTESTER
+			epoll_event			epoll_event_pipe_[2];
+		#endif
 		e_cgi_state			CGI_STATE_;
 		time_t				start_time_;
 		bool				timeout_;

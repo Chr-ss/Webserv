@@ -20,9 +20,15 @@ int	save_main(int argc, char **argv) {
 	std::signal(SIGINT, signal_handler);
 
 	std::cerr << "Webserver starting ... with config: " << path << std::endl;
+	#ifndef CONFTESTER
 	Webserv	webserver(path);
+	#else
+	ConfigParser(path).getConfigs();
+	#endif
 	std::cerr << "Webserver has started" << std::endl;
+	#ifndef CONFTESTER
 	webserver.eventLoop();
+	#endif
 	return (0);
 }
 

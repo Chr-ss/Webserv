@@ -15,40 +15,40 @@ path=./configs/invalid
 exe=./webserv
 configs=$(find $path -name "*" | sort)
 
-echo "${BLU}\n\n\tINVALID TESTER${RESET}"
+echo -e "${BLU}\tINVALID TESTER${RESET}"
 x=0
-for config in $configs
-do
-x=$((x+1))
-err_msg=$(timeout --preserve-status 0.1s $exe $config 2>&1 | tr -d '\n')
-if [ -z "$err_msg" ];
-then
-err_msg="DID NOT FAIL"
-echo "${RED}${x} : ${config} : \n${err_msg}${RESET}"
-else
-echo "${GRN}${x} : ${config} : \n${err_msg}${RESET}"
-fi
 
+for config in $configs; do
+    x=$((x + 1))
+
+    err_msg=$("$exe" "$config" 2>&1)
+
+    if [[ "$err_msg" == *"Webserver has started"* ]]; then
+        err_msg="DID NOT FAIL"
+        echo -e "${RED}${x} : ${config} :\n${err_msg}${RESET}"
+    else
+        echo -e "${GRN}${x} : ${config} :\n${err_msg}${RESET}"
+    fi
 done
-
 
 
 path=./configs
 exe=./webserv
 configs=$(find "$path" -type d -name "invalid" -prune -o -type f ! -name "mime.types" -print)
 
-echo "${BLU}\n\t VALID TESTER${RESET}"
+echo -e "${BLU}\n\t VALID TESTER${RESET}"
 x=0
-for config in $configs
-do
-x=$((x+1))
-err_msg=$(timeout --preserve-status 0.1s $exe $config 2>&1 | tr -d '\n')
-if [ -z "$err_msg" ];
-then
-err_msg="DID NOT FAIL"
-echo "${GRN}${x} : ${config} : \n${err_msg}${RESET}"
-else
-echo "${RED}${x} : ${config} : \n${err_msg}${RESET}"
-fi
+
+for config in $configs; do
+    x=$((x + 1))
+
+    err_msg=$("$exe" "$config" 2>&1)
+
+    if [[ "$err_msg" != *"Webserver has started"* ]]; then
+        err_msg="DID NOT FAIL"
+        echo -e "${RED}${x} : ${config} :\n${err_msg}${RESET}"
+    else
+        echo -e "${GRN}${x} : ${config} :\n${err_msg}${RESET}"
+    fi
 
 done
