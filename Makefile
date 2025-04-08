@@ -20,8 +20,6 @@ all:		$(NAME)
 
 conftester:		CPPFLAGS	+=	-DCONFTESTER
 				SRC			:=	src/Config/Config.cpp src/Config/ConfigParser.cpp src/main.cpp
-				# NAME		:=	webserv_tester
-				# OBJDIR		:=	.build/tester
 				OBJ			:=	$(SRC:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 conftester:		fclean $(NAME)
 				@./test_configs.sh
