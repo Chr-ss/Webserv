@@ -84,10 +84,13 @@ std::string readFile(std::ifstream& file) {
 	if (fileSize < 0) {
 		throw ConfigParser::ConfigParserException("ERROR PARSING: Failed to determine config file size");
 	}
+	if (fileSize > MAX_FILE_SIZE) {
+		throw ConfigParser::ConfigParserException("ERROR PARSING: Config file too large (limit is MAX_FILE_SIZE)");
+	}
 	file.seekg(0, std::ios::beg);
 	std::string fileContent(static_cast<size_t>(fileSize), '\0');
 	if (!file.read(&fileContent[0], fileSize)) {
-		throw ConfigParser::ConfigParserException("ERROR PARSING: Failed to read the entire config file");
+		throw ConfigParser::ConfigParserException("ERROR PARSING: Failed to read config file");
 	}
 	file.seekg(original_pos);
 	return (fileContent);
@@ -412,7 +415,6 @@ void ConfigParser::parseTokenToServer(std::vector<token>::iterator &it) {
 			it++;
 			break;
 		} else {
-			std::cout << "TEST: " << it->value << std::endl;
 			errorToken(*it, "Expected STRING, LOCATION or }");
 		}
 	}

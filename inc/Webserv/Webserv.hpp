@@ -22,7 +22,8 @@
 # define DEFAULT_AUTOINDEX false
 # define DEFAULT_LOCATION "/"
 # define DEFAULT_CONFIGFILE "configs/default.conf"
-# define DEFAULT_MIME_TYPES "configs/default.conf"
+# define DEFAULT_MIME_TYPES "configs/mime.types"
+# define MAX_FILE_SIZE 102400 // 100KB
 
 class Webserv {
 public:
