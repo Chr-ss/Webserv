@@ -13,19 +13,22 @@ SRC			:=	$(shell find $(SRCDIR) -iname "*.cpp")
 
 INCL        :=   -I./inc
 
-conftester:		CPPFLAGS	+=	-DCONFTESTER
-				SRC			=	src/Config/Config.cpp src/Config/ConfigParser.cpp src/main.cpp
-conftester:		$(NAME)
-				@./test_configs.sh
-
 OBJDIR		:=	.build
 OBJ			:=	$(SRC:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 
-
 all:		$(NAME)
 
+conftester:		CPPFLAGS	+=	-DCONFTESTER
+				SRC			:=	src/Config/Config.cpp src/Config/ConfigParser.cpp src/main.cpp
+				# NAME		:=	webserv_tester
+				# OBJDIR		:=	.build/tester
+				OBJ			:=	$(SRC:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
+conftester:		fclean $(NAME)
+				@./test_configs.sh
+				@$(MAKE) fclean
+
 $(NAME):	$(OBJ)
-			@$(CPP) $(OBJ) -o $(NAME) $(INCL)
+			@$(CPP) $(CPPFLAGS) $(OBJ) -o $(NAME) $(INCL)
 			@printf "$(CREATED)" $@ $(CUR_DIR)
 
 $(OBJDIR)/%.o:	$(SRCDIR)/%.cpp
