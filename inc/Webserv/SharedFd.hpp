@@ -35,9 +35,9 @@ public:
 	// conversion operator
 	inline explicit operator	int() const { return (_fd); }
 
-	///@brief resets ref count to one
-	/// Should be used in child process after call to fork
-	/// Use with caution: can lead to undefined behaviour if used wrong
+	///@brief: resets ref count to one
+	///@example: Should be used in child process after call to fork
+	///@caution: can lead to undefined behaviour if used wrong
 	inline void	resetRefCount() { _refCounts[_fd] = 1; }
 
 	inline bool	isValid() const { return (this->_fd >= 0); }
