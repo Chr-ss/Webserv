@@ -1,8 +1,17 @@
 #include "../../inc/CGI/CGIPipes.hpp"
+#include <stdexcept>
+#include <string>
 
 CGIPipes::CGIPipes( void ) {};
 
 CGIPipes::~CGIPipes(void) {}
+
+SharedFd& CGIPipes::operator[](size_t i) {
+	if (i > 3) {
+		throw std::invalid_argument("CGIPipes operator[]: " + std::to_string(i));
+	}
+	return (pipes_[i]);
+}
 
 void	CGIPipes::setCallbackFunctions( const SharedFd& client_fd, \
 		std::function<void(struct epoll_event, const SharedFd&)> pipe_add_cb, \

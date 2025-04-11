@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 # include <vector>
 # include <functional>
 # include <cstring>
@@ -28,11 +29,13 @@ class CGIPipes {
 		CGIPipes( void );
 		~CGIPipes( void );
 
-		void				setCallbackFunctions( const SharedFd& client_fd, \
+		SharedFd& operator[](size_t i);
+
+		void	setCallbackFunctions( const SharedFd& client_fd, \
 								std::function<void(struct epoll_event, const SharedFd&)> pipe_add_cb, \
 								std::function<void(const SharedFd&)> pipe_remove_cb );
 		
-		void				addNewPipes( void );
-		void				deletePipesFromEpoll( SharedFd &fd );
+		void	addNewPipes( void );
+		void	deletePipesFromEpoll( SharedFd &fd );
 		inline std::vector<SharedFd>	getPipes( void ) { return (pipes_); };
 };
