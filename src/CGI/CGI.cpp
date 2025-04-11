@@ -206,7 +206,7 @@ std::vector<char*> CGI::createEnv(HTTPRequest &request) {
 	if (request.method == "DELETE")
 	{
 		envStrings.push_back("DELETE_FILE=" + request.request_target);
-		request.request_target = "data/www/cgi-bin/nph_CGI_delete.py"; // TODO: why overwriting?
+		request.request_target = "data/www/cgi-bin/nph_CGI_delete.py"; // TODO: why overwriting? and should this be hardcoded?
 	}
 	envStrings.push_back("REQUEST_TARGET=" + request.request_target);
 	envStrings.push_back("REQUEST_METHOD=" + request.method);
