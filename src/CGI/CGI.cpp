@@ -250,10 +250,7 @@ bool	CGI::hasCGIProcessTimedOut(void) {
 	return (false);
 }
 
-void	CGI::cleanupProcess(void) {
-	if (kill(pid_, SIGKILL) == -1) // TODO: maybe use sigterm instead
-		throw std::runtime_error("kill() " + std::to_string(pid_) + " : " + strerror(errno));
-
+void	CGI::cleanupPipes(void) {
 	if (pipes_[TO_CGI_WRITE] != -1)
 	{
 		delFromEpoll_cb_(pipes_[TO_CGI_WRITE].get());
@@ -281,68 +278,48 @@ bool	CGI::isCGIProcessSuccessful(void) {
  * if statuscode is not set it wil generate a Internal Server Error
  */
 void	CGI::getResponseFromCGI(const SharedFd &fd) {
-	int return_value;
 	int status_code;
 
 	// check that fd ready is pipe read end
 	if (fd.get() != pipes_[FROM_CGI_READ].get())
 		return ;
 
-	if (!isCGIProcessFinished()) {
-		if (hasCGIProcessTimedOut()) {
-			std::cerr << "TIMEOUT, shutting down CGI...\n";
-			timeout_ = true;
-			CGI_STATE_ = CRT_RSPNS_CGI;
-			cleanupProcess();
-		};
-		return ;
+	std::string buffer = receiveBuffer(fd);
+	response_ += buffer;
+	bool isFinished = isCGIProcessFinished();
+	bool timedOut = hasCGIProcessTimedOut();
+	if (!buffer.empty() || (!isFinished && !timedOut)) {
+		return;
 	}
-
-	if (isCGIProcessSuccessful())
-	{
-		// TODO: return value will be 0 if the function above returns true
-		return_value = WEXITSTATUS(status_);
-		response_ = receiveBuffer(fd);
-		if (response_.empty())
-			return ;
-
-		if (return_value != 0) {
-			status_code = getStatusCodeFromResponse();
-			std::cerr << "status_code; " << status_code << std::endl;
-			// compare with configfile error pages.
-			std::cerr << "response" << response_ << std::endl;
-		}
+	if (isFinished && !isCGIProcessSuccessful()) {
+		response_ = CGI_ERR_RESPONSE;
+		status_code = getStatusCodeFromResponse();
+		std::cerr << "status_code; " << status_code << std::endl;
+		// TODO: compare with configfile error pages.
+	} else if (timedOut) {
+		std::cerr << "TIMEOUT, shutting down CGI...\n";
+		timeout_ = true;
+		if (kill(pid_, SIGKILL) == -1) // TODO: maybe use sigterm instead
+			throw std::runtime_error("kill() " + std::to_string(pid_) + " : " + strerror(errno));
 	}
-	else
-		response_ = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
+	cleanupPipes();
 	CGI_STATE_ = CRT_RSPNS_CGI;
 }
 
 /**
- * @brief receives a response from child with a headerfile and body to return to the client
- * @return string buffer with response from child or error msg that something went wrong
+ * @brief read from pipe to CGI
+ * @return string with read buffer
+ * @THROW throws exception if read fails
  */
 std::string	CGI::receiveBuffer(const SharedFd &fd) {
-	char	buffer[1024];
+	std::string buffer;
 	
-	ssize_t bytesRead = read(fd.get(), buffer, sizeof(buffer) - 1);
-	if (bytesRead > 0)
-		buffer[bytesRead] = '\0';
-	else
-	{
-		if (bytesRead == -1)
-		{
-			std::cerr << "Error read: " << std::strerror(errno) << std::endl;
-			return ("");
-		}
-		else
-			std::cerr << "Error: no output read"; // what now?
-		return std::string("HTTP/1.1 500 Internal Server Error\nContent-Type: text/html\n\r\n<html>\n") +
-			"<head><title>Server Error</title></head><body><h1>Something went wrong</h1></body></html>";
-	}
-	delFromEpoll_cb_(pipes_[FROM_CGI_READ].get());
-	pipes_[FROM_CGI_READ] = -1;
-	return (buffer); // also in chunked form...
+	// TODO: replace 1024 by macro
+	ssize_t bytesRead = read(fd.get(), buffer.data(), 1024 - 1);
+	if (bytesRead == -1) {
+		throw std::runtime_error(std::string("CGI read(): ") + strerror(errno));
+	} 
+	return (buffer);
 }
 
 /**

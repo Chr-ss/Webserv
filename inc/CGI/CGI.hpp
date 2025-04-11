@@ -14,6 +14,9 @@
 # include "../Webserv/SharedFd.hpp"
 #include "CGIPipes.hpp"
 
+# define CGI_ERR_RESPONSE "HTTP/1.1 500 Internal Server Error\nContent-Type: text/html\n\r\n<html>\n\
+	<head><title>Server Error</title></head><body><h1>Something went wrong</h1></body></html>";
+
 #ifndef READ
 # define READ 0
 #endif
@@ -51,7 +54,7 @@ class CGI {
 		bool				isCGIProcessFinished( void );
 		bool				isCGIProcessSuccessful( void );
 		bool				hasCGIProcessTimedOut(void);
-		void				cleanupProcess(void);
+		void				cleanupPipes(void);
 
 		// SEND_TO_CGI
 		void				sendDataToCGI( const SharedFd &fd );
