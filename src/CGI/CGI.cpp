@@ -223,35 +223,40 @@ std::vector<char*> CGI::createEnv(std::vector<std::string> &envStrings, HTTPRequ
 }
 
 bool	CGI::isCGIProcessFinished(void) {
-	time_t	current_time;
 	pid_t	result;
 
+	// check finished
 	result = waitpid(pid_, &status_, WNOHANG);
 	if (result == pid_)
 		return (true);
+	return (false);
+}
 
+bool	CGI::hasCGIProcessTimedOut(void) {
 	timeout_ = false;
-	current_time = time(NULL);
-	if (current_time - start_time_ > TIMEOUT)
-	{
-		std::cerr << "TIMEOUT, shutting down CGI...\n";
+	time_t current_time = time(NULL);
+	if (current_time - start_time_ > TIMEOUT) {
 		timeout_ = true;
-		if (pipe_to_CGI_[WRITE] != -1)
-		{
-			delFromEpoll_cb_(pipe_to_CGI_[WRITE]);
-			pipe_to_CGI_[WRITE] = -1;
-		}
-		if (pipe_from_CGI_[READ] != -1)
-		{
-			delFromEpoll_cb_(pipe_from_CGI_[READ]);
-			pipe_from_CGI_[READ] = -1;
-		}
-		CGI_STATE_ = CRT_RSPNS_CGI;
 		return (true);
 	}
 	return (false);
 }
 
+void	CGI::cleanupProcess(void) {
+	if (kill(pid_, SIGKILL) == -1) // TODO: maybe use sigterm instead
+		throw std::runtime_error("kill() " + std::to_string(pid_) + " : " + strerror(errno));
+
+	if (pipes_[TO_CGI_WRITE] != -1)
+	{
+		delFromEpoll_cb_(pipes_[TO_CGI_WRITE].get());
+		pipes_[TO_CGI_WRITE] = -1;
+	}
+	if (pipes_[FROM_CGI_READ] != -1)
+	{
+		delFromEpoll_cb_(pipes_[FROM_CGI_READ].get());
+		pipes_[FROM_CGI_READ] = -1;
+	}
+}
 bool	CGI::isCGIProcessSuccessful(void) {
 	if (WIFEXITED(status_) && WEXITSTATUS(status_) == 0)
 		return (true);
@@ -265,20 +270,31 @@ bool	CGI::isCGIProcessSuccessful(void) {
  * @brief checks response status from CGI and receives header (and body) from pipe
  * if statuscode is not set it wil generate a Internal Server Error
  */
-bool	CGI::getResponseFromCGI(const SharedFd &fd) {
+void	CGI::getResponseFromCGI(const SharedFd &fd) {
 	int return_value;
 	int status_code;
 
-	if (fd.get() != pipe_from_CGI_[READ])
-		return (false);
-	if (!isCGIProcessFinished())
-		return (false);
+	// check that fd ready is pipe read end
+	if (fd.get() != pipes_[FROM_CGI_READ].get())
+		return ;
+
+	if (!isCGIProcessFinished()) {
+		if (hasCGIProcessTimedOut()) {
+			std::cerr << "TIMEOUT, shutting down CGI...\n";
+			timeout_ = true;
+			CGI_STATE_ = CRT_RSPNS_CGI;
+			cleanupProcess();
+		};
+		return ;
+	}
+
 	if (isCGIProcessSuccessful())
 	{
+		// TODO: return value will be 0 if the function above returns true
 		return_value = WEXITSTATUS(status_);
 		response_ = receiveBuffer(fd);
 		if (response_.empty())
-			return (false);
+			return ;
 
 		if (return_value != 0) {
 			status_code = getStatusCodeFromResponse();
@@ -289,7 +305,7 @@ bool	CGI::getResponseFromCGI(const SharedFd &fd) {
 	}
 	else
 		response_ = "HTTP/1.1 500 Internal Server Error\r\n\r\n";
-	return (true);
+	CGI_STATE_ = CRT_RSPNS_CGI;
 }
 
 /**
