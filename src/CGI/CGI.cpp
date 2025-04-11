@@ -1,17 +1,22 @@
 #include "../../inc/CGI/CGI.hpp"
+#include <csignal>
+#include <cstring>
+#include <stdexcept>
+#include <string>
+#include <unistd.h>
 
 // #######################     PUBLIC     ########################
 // ###############################################################
 
-CGI::CGI(const std::string &post_data, std::vector<SharedFd> pipes, \
-		std::function<void(int)> delFromEpoll_cb) : post_data_(post_data), \
-		delFromEpoll_cb_(delFromEpoll_cb) {
-	pipe_from_CGI_[READ] = pipes[0].get();
-	pipe_from_CGI_[WRITE] = pipes[1].get();
-	pipe_to_CGI_[READ] = pipes[2].get();
-	pipe_to_CGI_[WRITE] = pipes[3].get();
-	(void) pipes;
-	CGI_STATE_ = START_CGI;
+CGI::CGI(const std::string &post_data,
+		 CGIPipes pipes,
+		 std::function<void(int)> delFromEpoll_cb)
+	:
+	post_data_(post_data), 
+	pipes_(pipes),
+	delFromEpoll_cb_(delFromEpoll_cb),
+	CGI_STATE_(START_CGI)
+{
 }
 
 CGI::~CGI(void) {}
@@ -23,25 +28,20 @@ bool	CGI::isReady(void) { return (CGI_STATE_ == CRT_RSPNS_CGI); }
 bool	CGI::isTimeout(void) { return (timeout_); }
 
 void	CGI::handle_cgi(HTTPRequest &request, const SharedFd &fd) {
-	std::vector<std::string>	env_strings;
 
 	switch (CGI_STATE_) {
 		case START_CGI:
-			createEnv(env_strings, request);
-			forkCGI(request.request_target, env_strings);
-			CGI_STATE_ = SEND_TO_CGI;
+			execCGI(request);
 			return ;
 		case SEND_TO_CGI:
-			if (!sendDataToStdinReady(fd))
+			sendDataToCGI(fd);
+			if (CGI_STATE_ == SEND_TO_CGI)
 				return ;
-			CGI_STATE_ = RCV_FROM_CGI;
-			return ;
 		case RCV_FROM_CGI:
-			if (!getResponseFromCGI(fd))
+			getResponseFromCGI(fd);
+			if (CGI_STATE_ == RCV_FROM_CGI)
 				return ;
-			CGI_STATE_ = CRT_RSPNS_CGI;
 		case CRT_RSPNS_CGI:
-			return ;
 		default:
 			return ;
 	}
@@ -129,34 +129,41 @@ std::string CGI::getScriptExecutable(const std::string &path)
 
 /**
  * @brief forks the process to execve the CGI, with POST sends buffer to child
- * @param executable const string CGI filename
- * @param env_vector char* vector with key-values as env argument to CGI
+ * @param request HTTP request
  */
-void	CGI::forkCGI(const std::string &executable, std::vector<std::string> env_vector) {
+void	CGI::execCGI(HTTPRequest& request) {
 	std::cout << std::flush;
 	start_time_ = time(NULL);
+	std::string executable = request.request_target;
 
 	pid_ = fork();
 	if (pid_ < 0)
-		throwException("Fork failed");
+		throw std::runtime_error("fork()");
 	else if (pid_ == 0) 
 	{
-		if (dup2(pipe_to_CGI_[READ], STDIN_FILENO) < 0)
-			throwExceptionExit("dub2 failed");
-		if (dup2(pipe_from_CGI_[WRITE], STDOUT_FILENO) < 0)
-			throwExceptionExit("dub2 failed");
+		// reset refcount to 1 in child since independent process
+		for(int i = 0; i < 4; ++i) {
+			pipes_[i].resetRefCount();
+		}
 
-		std::vector<char*>	argv_vector;
-		std::vector<char*>	env_c_vector;
-		createArgvVector(argv_vector, executable);
-		createEnvCharPtrVector(env_c_vector, env_vector);
-
-		if (execve(executable.c_str(), argv_vector.data(), env_c_vector.data()) == -1)
-			std::cerr << "Error: Execve failed: " <<  executable << std::strerror(errno) << std::endl;
-		exit(1);
+		auto redir = [](int fdA, int fdB) {
+			if (dup2(fdA, fdB) < 0)
+				throw std::runtime_error("dup2(): " + std::to_string(fdA) + ": " + strerror(errno));
+		};
+		try {
+			redir(pipes_[TO_CGI_READ].get(), STDIN_FILENO);
+			redir(pipes_[TO_CGI_WRITE].get(), STDOUT_FILENO);
+			std::vector<char*>	argv_vector = createArgvVector(executable);
+			std::vector<char*>	env_vector = createEnv(request);
+			if (execve(executable.c_str(), argv_vector.data(), env_vector.data()) == -1)
+				throw std::runtime_error("execve(): " +  executable + ": " + std::strerror(errno));
+		} catch (std::runtime_error) {
+			exit(1); // TODO: how to handle this case
+		}
 	}
-	pipe_to_CGI_[READ] = -1;
-	pipe_from_CGI_[WRITE] = -1;
+	pipes_[TO_CGI_READ] = -1;
+	pipes_[FROM_CGI_WRITE] = -1;
+	CGI_STATE_ = SEND_TO_CGI;
 }
 
 // ###############################################################
@@ -166,42 +173,40 @@ void	CGI::forkCGI(const std::string &executable, std::vector<std::string> env_ve
  * @brief writes body to stdin for CGI and closes write end pipe
  * @param post_data string with body
  */
-bool	CGI::sendDataToStdinReady(const SharedFd &fd) {
+void	CGI::sendDataToCGI(const SharedFd &fd) {
 	ssize_t				write_bytes;
 
-	if (fd.get() != pipe_to_CGI_[WRITE])
-		return (false);
+	// check that ready fd is write end
+	if (fd.get() != pipes_[TO_CGI_WRITE].get())
+		return ;
 
 	if (!post_data_.empty())
 	{
 		write_bytes = write(fd.get(), post_data_.c_str(), post_data_.size());
-		if (write_bytes != (ssize_t)post_data_.size())
-		{
-			if (write_bytes == -1)
-				std::cerr << "Error write: " << std::strerror(errno) << std::endl;
-			else 
-			{
-				post_data_.erase(0, write_bytes);
-				std::cerr << "Could not written everything in once, remaining bytes:" <<  write_bytes << std::endl;
-				return (false);
-			}
+		if (write_bytes == -1) {
+			throw std::runtime_error("CGI write(): " + std::to_string(fd.get()) + " : " + strerror(errno));
+		} else if (write_bytes != (ssize_t)post_data_.size()) {
+			post_data_.erase(0, write_bytes);
+			std::cerr << "Could not written everything in once, remaining bytes:" <<  write_bytes << std::endl;
+			// TODO: probably needs to be handled differently
+			return ;
 		}
 	}
-	delFromEpoll_cb_(pipe_to_CGI_[WRITE]);
-	return (true);
+	delFromEpoll_cb_(pipes_[TO_CGI_WRITE].get());
+	CGI_STATE_ = RCV_FROM_CGI;
 }
 
 /**
  * @brief creates a vector<char*> to store all the current request info as env variable
- * @param envStrings all info from the HTTP header
  * @param request struct with all information that is gathered. 
  * @return vector<char*> with all env information
  */
-std::vector<char*> CGI::createEnv(std::vector<std::string> &envStrings, HTTPRequest &request) {
+std::vector<char*> CGI::createEnv(HTTPRequest &request) {
+	std::vector<std::string> envStrings;
 	if (request.method == "DELETE")
 	{
 		envStrings.push_back("DELETE_FILE=" + request.request_target);
-		request.request_target = "data/www/cgi-bin/nph_CGI_delete.py";
+		request.request_target = "data/www/cgi-bin/nph_CGI_delete.py"; // TODO: why overwriting?
 	}
 	envStrings.push_back("REQUEST_TARGET=" + request.request_target);
 	envStrings.push_back("REQUEST_METHOD=" + request.method);
@@ -215,11 +220,14 @@ std::vector<char*> CGI::createEnv(std::vector<std::string> &envStrings, HTTPRequ
 			envStrings.push_back(pair.first + "=" + pair.second);
 	}
 
-	std::vector<char*>	env;
-	for (auto &str : envStrings)
-		env.push_back(const_cast<char*>(str.c_str()));
-	env.push_back(nullptr);
-	return (env);
+	// create result vector with char*
+	std::vector<char*> result;
+	result.push_back(const_cast<char*>("GATEWAY=CGI/1.1"));
+	result.push_back(const_cast<char*>("SERVER_PROTOCOL=HTTP/1.1"));
+	for (auto& str : envStrings)
+		result.push_back(const_cast<char*>(str.c_str()));
+	result.push_back(NULL);
+	return (result);
 }
 
 bool	CGI::isCGIProcessFinished(void) {
@@ -257,6 +265,8 @@ void	CGI::cleanupProcess(void) {
 		pipes_[FROM_CGI_READ] = -1;
 	}
 }
+
+
 bool	CGI::isCGIProcessSuccessful(void) {
 	if (WIFEXITED(status_) && WEXITSTATUS(status_) == 0)
 		return (true);
@@ -330,8 +340,8 @@ std::string	CGI::receiveBuffer(const SharedFd &fd) {
 		return std::string("HTTP/1.1 500 Internal Server Error\nContent-Type: text/html\n\r\n<html>\n") +
 			"<head><title>Server Error</title></head><body><h1>Something went wrong</h1></body></html>";
 	}
-	delFromEpoll_cb_(pipe_from_CGI_[READ]);
-	pipe_from_CGI_[READ] = -1;
+	delFromEpoll_cb_(pipes_[FROM_CGI_READ].get());
+	pipes_[FROM_CGI_READ] = -1;
 	return (buffer); // also in chunked form...
 }
 
