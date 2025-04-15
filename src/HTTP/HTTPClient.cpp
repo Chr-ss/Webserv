@@ -144,10 +144,9 @@ void	HTTPClient::cgiResponse(void) {
 		HTTPRequest	timeout_request;
 		std::memset(&timeout_request, 0, sizeof(timeout_request));
 		timeout_request.request_target = "timeout";
-		timeout_request.status_code = 408;
+		timeout_request.status_code = 500;
 		responseGenerator_.generateResponse(timeout_request);
 		message_que_.push_back(responseGenerator_.loadResponse());
-
 	}
 	else
 	{	if (!cgi_->isNPHscript(request_.request_target))

@@ -70,7 +70,7 @@ void	CGI::rewriteResonseFromCGI(void) {
 	}
 	new_response += "\r\n";
 
-	std::size_t	index = response_.find("\r\n\r");
+	std::size_t	index = response_.find("\r\n\r\n");
 	if (index != std::string::npos)
 	{
 		if (index + 4 < response_.size())
@@ -155,8 +155,10 @@ void	CGI::forkCGI(const std::string &executable, std::vector<std::string> env_ve
 			std::cerr << "Error: Execve failed: " <<  executable << std::strerror(errno) << std::endl;
 		exit(1);
 	}
-	pipe_to_CGI_[READ] = -1;
-	pipe_from_CGI_[WRITE] = -1;
+	// close(pipe_to_CGI_[READ]); // NOT WORKING WITH THIS
+	// close(pipe_from_CGI_[WRITE]);
+	// pipe_to_CGI_[READ] = -1;
+	// pipe_from_CGI_[WRITE] = -1;
 }
 
 // ###############################################################
@@ -188,6 +190,7 @@ bool	CGI::sendDataToStdinReady(const SharedFd &fd) {
 		}
 	}
 	delFromEpoll_cb_(pipe_to_CGI_[WRITE]);
+	pipe_to_CGI_[WRITE] = -1;
 	return (true);
 }
 
@@ -227,14 +230,14 @@ bool	CGI::isCGIProcessFinished(void) {
 	pid_t	result;
 
 	result = waitpid(pid_, &status_, WNOHANG);
-	if (result == pid_)
+	if (result == pid_ || result != 0)
 		return (true);
 
 	timeout_ = false;
 	current_time = time(NULL);
 	if (current_time - start_time_ > TIMEOUT)
 	{
-		std::cerr << "TIMEOUT, shutting down CGI...\n";
+		std::cerr << "TIMEOUT, shutting down CGI..." << current_time - start_time_ << std::endl;
 		timeout_ = true;
 		if (pipe_to_CGI_[WRITE] != -1)
 		{
@@ -268,28 +271,29 @@ bool	CGI::isCGIProcessSuccessful(void) {
 bool	CGI::getResponseFromCGI(const SharedFd &fd) {
 	int return_value;
 	int status_code;
-
-	if (fd.get() != pipe_from_CGI_[READ])
-		return (false);
-	if (!isCGIProcessFinished())
-		return (false);
-	if (isCGIProcessSuccessful())
+	
+	if (isCGIProcessFinished())
 	{
-		return_value = WEXITSTATUS(status_);
-		response_ = receiveBuffer(fd);
-		if (response_.empty())
-			return (false);
-
-		if (return_value != 0) {
-			status_code = getStatusCodeFromResponse();
-			std::cerr << "status_code; " << status_code << std::endl;
-			// compare with configfile error pages.
-			std::cerr << "response" << response_ << std::endl;
+		if (timeout_)
+			status_code = 500;
+		else if (!isCGIProcessSuccessful())
+		{
+			status_ = 500;
+			response_ = std::string("HTTP/1.1 500 Internal Server Error\nContent-Type: text/html\n\r\n<html>\n") +
+				"<head><title>Server Error</title></head><body><h1>Something went wrong in the CGI</h1></body></html>";
 		}
+		else
+		{
+			if (pipe_from_CGI_[READ] == -1 || fd.get() != pipe_from_CGI_[READ])
+				return (false);
+			return_value = WEXITSTATUS(status_);
+			response_ = receiveBuffer(fd);
+			if (!response_.empty())
+				status_code = getStatusCodeFromResponse();
+		}
+		return (true);
 	}
-	else
-		response_ = "HTTP/1.1 500 Internal Server Error??\r\n\r\n";
-	return (true);
+	return (false);
 }
 
 /**
