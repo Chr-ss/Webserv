@@ -7,6 +7,7 @@
 # include <iostream>
 # include <regex>
 
+
 class Webserv;
 
 struct Location {
@@ -36,9 +37,10 @@ class Config {
 		const std::unordered_map<std::string, std::vector<std::string>>	getLocDirectives(const std::string locKey) const;
 
 		//	GETTER need for WebServer/Client Class
-		int						getPort() const;
-		const std::string		getHost() const;
-		const std::string		getServerName() const;
+		// const std::vector<int>									getPort() const;
+		// const std::vector<std::string>							getHost() const;
+		const std::unordered_map<std::string, std::vector<int>> getHostPort() const;
+		const std::string					getServerName() const;
 
 		bool							getAutoindex(const std::string locKey) const;		// autoindex on;
 		std::uint64_t					getClientBodySize(const std::string locKey) const;	// client_max_body_size 10M;
@@ -46,8 +48,7 @@ class Config {
 		const std::vector<std::string>	getRoot(const std::string locKey) const;			// root /tmp/www;
 		const std::vector<std::string>	getMethods(const std::string locKey) const;			// allow_methods  DELETE POST GET;
 		const std::vector<std::string>	getIndex(const std::string locKey) const;			// index index.html index.php;
-		const std::string				getErrorPage(int errorCode) const;	// error_page 404 /tmp/www/404.html;
-
+		const std::string				getErrorPage(int errorCode) const;					// error_page 404 /tmp/www/404.html;
 		// UTILS
 		void	printConfig();
 

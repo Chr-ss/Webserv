@@ -12,7 +12,7 @@ void	Config::setMimeTypes(const std::unordered_map<std::string, std::vector<std:
 }
 
 int Config::setDirective(const std::string key, std::vector<std::string> values) {
-	if (key != "error_page" && _directives.find(key) != _directives.end())
+	if (key != "error_page" && key != "listen" && _directives.find(key) != _directives.end())
 		return (-1);
 	for (std::string str: values) {
 		_directives[key].push_back(str);
@@ -92,48 +92,57 @@ const std::unordered_map<std::string, std::vector<std::string>> Config::getLocDi
 // ####################     GET RAW DATA     #####################
 // ###############################################################
 
-
-int	Config::getPort() const{
-	int port;
+const std::unordered_map<std::string, std::vector<int>> Config::getHostPort() const{
+	std::unordered_map<std::string, std::vector<int>> hostPort;
+	std::vector<int> defaultPorts;
+	std::string strHost;
 	std::string strPort;
 	auto it = this->_directives.find("listen");
 	if (it != this->_directives.end()) {
-		strPort = it->second[0];
-		size_t pos = strPort.find(':');
-		if (pos != std::string::npos) {
-			strPort = strPort.substr(pos + 1);
-		}
-		if (strPort.find_first_not_of("0123456789") != std::string::npos) {
-			throw Config::ConfigException("Port is not a number!");
-		}
-		if (strPort.empty()) {
-			throw Config::ConfigException("Port is empty!");
-		}
-		port = stoi(strPort);
-	} else {
-		port = DEFAULT_PORT;
-	}
-	return (port);
-}
-
-const std::string	Config::getHost() const{
-	auto it = this->_directives.find("host");
-	if (it != this->_directives.end()) {
-		if (it->second.size() > 0) {
-			return (it->second[0]);
-		}
-	}
-	else {
-		auto it = this->_directives.find("listen");
-		if (it != this->_directives.end()) {
-			std::string strHost = it->second[0];
-			size_t pos = strHost.find(':');
+		for (size_t i = 0; i < it->second.size(); i++)
+		{
+			// split host and port
+			strPort = it->second[i];
+			size_t pos = strPort.find_last_of(':');
 			if (pos != std::string::npos) {
-				return (strHost.substr(0, pos));
+				strHost = strPort.substr(0, pos);
+				strPort = strPort.substr(pos + 1);
+			} else {
+				strHost = "";
+			}
+			// Port validation
+			if (strPort.empty()) {
+				throw Config::ConfigException("Port is empty!");
+			} else if (strPort.find_first_not_of("0123456789") != std::string::npos) {
+				if (strHost.empty()) {
+					strHost = strPort;
+					strPort = "";
+				} else
+					throw Config::ConfigException("Port is not a number!");
+			} else if (strPort.length() > 5) {
+				throw Config::ConfigException("Port is out of range!");
+			}
+			// Adding host/port combination
+			if (strHost.empty() || strHost == "[::]" || strHost == "0.0.0.0") {
+				defaultPorts.push_back(stoi(strPort));
+			} else {
+				if (hostPort.find(strHost) == hostPort.end()) {
+					hostPort[strHost] = std::vector<int>();
+				}
+				if (!strPort.empty())
+					hostPort[strHost].push_back(stoi(strPort));
+			}
+		}
+		// Add all default ports to all hosts
+		for (int port : defaultPorts) {
+			for (auto &entry : hostPort) {
+				if (std::find(entry.second.begin(), entry.second.end(), port) == entry.second.end()) {
+					entry.second.push_back(port);
+				}
 			}
 		}
 	}
-	return ("");
+	return (hostPort);
 }
 
 const std::string	Config::getServerName() const{
@@ -236,7 +245,7 @@ bool	Config::getAutoindex(const std::string locKey) const{
 const std::string	Config::getErrorPage(int errorCode) const {
 	auto it = this->_directives.find("error_page");
 	if (it != this->_directives.end()) {
-		for (size_t i = 0; i < it->second.size() && (i + 1) < it->second.size() ; i += 2) {
+		for (size_t i = 0; i < it->second.size() && (i + 1) < it->second.size(); i += 2) {
 			if (it->second[i] == std::to_string(errorCode)) {
 				return (it->second[i + 1]);
 			}

@@ -19,8 +19,7 @@ enum tokenType {
 	OPERATOR,
 	STRING,
 	NUMBER,
-	PATH,
-	URL,
+	PATH
 };
 
 // TOKENS FOR LEXAR
@@ -42,7 +41,7 @@ class ConfigParser {
 		std::unordered_map<std::string, std::vector<std::string>>	_mimeTypes;
 
 		// PARSING
-		token getNextToken(token &lastToken, const std::regex &url, const std::regex &path, const std::regex &op);
+		token getNextToken(token &lastToken, const std::regex &path, const std::regex &op);
 		// UTILS
 		void	moveOneTokenSafly(std::vector<token> &tokens, std::vector<token>::iterator &it);
 		// EXCEPTIONS
@@ -75,11 +74,12 @@ class ConfigParser {
 
 		void	checkPort();
 		void	checkHost();
-		void	checkServerName();
+		void	checkServerName();		//
 		void	checkClientBodySize();	// https://nginx.org/en/docs/syntax.html
 
 		// GETTERS
 		std::vector<Config> getConfigs() const { return this->_configs; }
+
 
 		// UTILS
 		void	printInput();

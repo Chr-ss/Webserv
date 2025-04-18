@@ -3,8 +3,18 @@
 void debugConfigPrint(std::vector<Config> &configs) {
 	for (auto &config : configs) {
 		config.printConfig();
-		std::cout << BOLD << "getPort(): " << config.getPort() << RESET << std::endl;
-		std::cout << BOLD << "getHost(): " << config.getHost() << RESET << std::endl;
+		std::cout << BOLD << "getHostPort():";
+		std::unordered_map<std::string, std::vector<int>> hostPort = config.getHostPort();
+		for (const auto &entry : hostPort) {
+			std::cout << "\n\t\t" << entry.first << " >> ";
+			for (auto it = entry.second.begin(); it != entry.second.end(); ++it) {
+				std::cout << entry.first << ":" << *it;
+				if (std::next(it) != entry.second.end()) {
+					std::cout << ", ";
+				}
+			}
+		}
+		std::cout << RESET << std::endl;
 		std::cout << BOLD << "getServerName(): " << config.getServerName() << RESET << std::endl;
 		std::cout << BOLD << "getErrorPage(404): " << config.getErrorPage(404) << RESET << std::endl;
 		std::cout << BOLD << "getAutoindex(\"/\"): " << config.getAutoindex("/") << RESET << std::endl;
@@ -41,10 +51,10 @@ ConfigParser::ConfigParser(const std::string& filepath) {
 	std::cout << filepath << std::endl;
 	readConfigToInput();
 	parseInputToTokens();
-	// printTokens(this->_tokens);
+	printTokens(this->_tokens);
 	parseTokenToConfig();
 	this->_configs[0].setMimeTypes(this->_mimeTypes);
-	// debugConfigPrint(this->_configs);
+	debugConfigPrint(this->_configs);
 }
 
 ConfigParser::~ConfigParser() {
@@ -85,7 +95,7 @@ std::string readFile(std::ifstream& file) {
 		throw ConfigParser::ConfigParserException("ERROR PARSING: Failed to determine config file size");
 	}
 	if (fileSize > MAX_CONFIG_FILE_SIZE) {
-		throw ConfigParser::ConfigParserException("ERROR PARSING: Config file too large (limit is MAX_CONFIG_FILE_SIZE)");
+		throw ConfigParser::ConfigParserException("ERROR PARSING: Config file too large (limit is MAX_FILE_SIZE)");
 	}
 	file.seekg(0, std::ios::beg);
 	std::string fileContent(static_cast<size_t>(fileSize), '\0');
@@ -148,7 +158,6 @@ void ConfigParser::printTokens(std::vector<token> &tokens) {
 		{SEMICOLON, BG_BRIGHT_YELLOW},
 		{STRING, BG_BRIGHT_MAGENTA},
 		{NUMBER, BG_YELLOW},
-		{URL, BG_CYAN},
 		{PATH, BG_GREEN},
 		{OPERATOR, BG_PURPLE},
 		{EOF_TOKEN, BG_RED}
@@ -195,15 +204,25 @@ void	ConfigParser::errorToken(token token, std::string msg) {
 
 void	ConfigParser::checkConfig(Config &config) {
 	size_t indexConf = _configs.size() + 1;
-	try {;
+	try {
 		for (std::vector<Config>::iterator it = this->_configs.begin(); it != this->_configs.end(); ++it) {
-			if (it->getHost() == config.getHost() && it->getPort() == config.getPort() && it->getServerName() == config.getServerName())
-				throw ConfigParser::ConfigParserException("Duplicate server block with same host, port and servername.");
+			if (it->getServerName() == config.getServerName()) {
+				for (auto &host: it->getHostPort()) {
+					for (auto &port: host.second) {
+						for (auto &host2: config.getHostPort()) {
+							if (host.first == host2.first) {
+								for (auto &port2: host2.second) {
+									if (port == port2) {
+										throw ConfigParser::ConfigParserException("Duplicate server block with same host and port.");
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
-		if (config.getPort() <= 0 || config.getPort() > 65535)
-			throw ConfigParser::ConfigParserException("Port out of valid range.");
-		if (config.getHost().empty())
-			throw ConfigParser::ConfigParserException("Host is not defined.");
+
 		if (config.getRoot("/").empty())
 			throw ConfigParser::ConfigParserException("Root is not defined.");
 	} catch (ConfigParser::ConfigParserException &e) {
@@ -211,7 +230,7 @@ void	ConfigParser::checkConfig(Config &config) {
 	}
 }
 
-token ConfigParser::getNextToken(token &lastToken, const std::regex &url_regex, const std::regex &path_regex, const std::regex &op_regex) {
+token ConfigParser::getNextToken(token &lastToken, const std::regex &path_regex, const std::regex &op_regex) {
 	token newToken;
 	newToken.itStart = lastToken.itEnd;
 	if (*newToken.itStart == '#') {
@@ -249,8 +268,6 @@ token ConfigParser::getNextToken(token &lastToken, const std::regex &url_regex, 
 		newToken.type = NUMBER;
 	} else if (std::regex_match(newToken.value, op_regex)) {
 		newToken.type = OPERATOR;
-	} else if (std::regex_match(newToken.value, url_regex)) {
-		newToken.type = URL;
 	} else if (std::regex_match(newToken.value, path_regex)) {
 		newToken.type = PATH;
 	} else {
@@ -261,13 +278,12 @@ token ConfigParser::getNextToken(token &lastToken, const std::regex &url_regex, 
 
 void ConfigParser::parseInputToTokens() {
 	token newToken;
-	static const std::regex url_regex(R"(https?:\/\/[a-zA-Z0-9\-_\.\/]+)");
 	static const std::regex path_regex(R"(^(/[a-zA-Z0-9._~!$&'()*+,;=:@-]*)*$)");
 	static const std::regex op_regex(R"([=~!^][=~!^|*]*)");
 	newToken.type = INIT;
 	newToken.itEnd = this->_input.begin();
 	while (newToken.type != EOF_TOKEN) {
-		newToken = getNextToken(newToken, url_regex, path_regex, op_regex);
+		newToken = getNextToken(newToken, path_regex, op_regex);
 		this->_tokens.push_back(newToken);
 	}
 }
