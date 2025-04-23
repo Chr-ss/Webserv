@@ -283,7 +283,6 @@ bool	HTTPParser::isRedirection(std::string &endpoint, const std::vector<std::str
 			return (false);
 		}
 		endpoint = redir[1];
-		std::cerr << "endoiunt: " << endpoint << std::endl;
 		result_.body = \
 			"HTTP/1.1 " + redir[0] + " Found\r\nLocation: " + result_.request_target + \
 			"\r\nContent-Type: text/html\r\n\r\n";

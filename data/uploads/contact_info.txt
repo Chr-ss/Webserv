@@ -22,3 +22,4 @@ name = Testname Doe; email = test@email.com; message = Hello!;
 name = Testname Doe; email = test@email.com; message = Hello!; 
 name = Testname Doe; email = test@email.com; message = Hello!; 
 name = Testname Doe; email = test@email.com; message = Hello!; 
+name = Test; email = test@mail.com; message = Hai; 
