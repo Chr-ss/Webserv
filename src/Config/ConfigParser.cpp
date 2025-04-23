@@ -57,10 +57,10 @@ ConfigParser::ConfigParser(const std::string& filepath) {
 	std::cout << filepath << std::endl;
 	readConfigToInput();
 	parseInputToTokens();
-	printTokens(this->_tokens);
+	// printTokens(this->_tokens);
 	parseTokenToConfig();
 	this->_configs[0].setMimeTypes(this->_mimeTypes);
-	debugConfigPrint(this->_configs);
+	// debugConfigPrint(this->_configs);
 }
 
 ConfigParser::~ConfigParser() {
