@@ -74,29 +74,44 @@ const std::unordered_map<std::string, std::vector<std::string>> Config::getLocDi
 	std::unordered_map<std::string, std::vector<std::string>> locMap = this->_directives;
 	size_t pos = 0;
 	std::string key = "/";
-	while (pos < locKey.size()) {
+	std::string relLocKey = locKey;
+	// Check if the location key is a root location
+	for (auto it_loc: locMap) {
+		if (it_loc.first == "root") {
+			if (locKey.find(it_loc.second[0]) != std::string::npos) {
+				if (it_loc.second[0].back() != '/') {
+					relLocKey = locKey.substr(it_loc.second[0].length());
+				} else {
+					relLocKey = locKey.substr(it_loc.second[0].length() - 1);
+				}
+			}
+		}
+	}
+	// Add all non strict locations or perfect match strict match
+	while (pos < relLocKey.size()) {
 		auto it = this->_locations.find(key);
 		if (it != this->_locations.end()) {
 			Location loc = it->second;
-			if (loc.strict_match == false || pos + 1 == locKey.size()) {
+			if (loc.strict_match == false || pos + 1 == relLocKey.size()) {
 				for (auto it_loc = loc.directives.begin(); it_loc != loc.directives.end(); it_loc++) {
 					locMap[it_loc->first] = it_loc->second;
 				}
 			}
 		}
-		pos = locKey.find('/', pos + 1);
-		key = locKey.substr(0, pos + 1);
+		pos = relLocKey.find('/', pos + 1);
+		key = relLocKey.substr(0, pos + 1);
 	}
-	if (pos == std::string::npos && locKey.back() != '/') {
-		pos = locKey.find_last_of('/');
-		key = locKey.substr(pos, locKey.size());
-	}
-	auto it = this->_locations.find(key);
-	if (it != this->_locations.end()) {
-		Location loc = it->second;
-		if (loc.strict_match == false || pos + 1 == locKey.size()) {
-			for (auto it_loc = loc.directives.begin(); it_loc != loc.directives.end(); it_loc++) {
-				locMap[it_loc->first] = it_loc->second;
+	// Add file locations
+	if (pos == std::string::npos && relLocKey.back() != '/') {
+		pos = relLocKey.find_last_of('/');
+		key = relLocKey.substr(pos, relLocKey.size());
+		auto it = this->_locations.find(key);
+		if (it != this->_locations.end()) {
+			Location loc = it->second;
+			if (loc.strict_match == false || pos + 1 == relLocKey.size()) {
+				for (auto it_loc = loc.directives.begin(); it_loc != loc.directives.end(); it_loc++) {
+					locMap[it_loc->first] = it_loc->second;
+				}
 			}
 		}
 	}
