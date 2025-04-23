@@ -289,7 +289,6 @@ bool	HTTPParser::isRedirection(std::string &endpoint, const std::vector<std::str
 			return (false);
 		}
 		endpoint = redir[1];
-		std::cerr << "endoiunt: " << endpoint << std::endl;
 		result_.body = \
 			"HTTP/1.1 " + redir[0] + " Found\r\nLocation: " + result_.request_target + \
 			"\r\nContent-Type: text/html\r\n\r\n";
@@ -382,7 +381,7 @@ std::string	HTTPParser::handleRootDir(const Config *config) {
 	struct stat	statbuf;
 	for (const std::string &index : indices)
 	{
-		for (const std::string &dir : result_.subdir)
+		for (const std::string &dir : config->getRoot("/"))
 		{
 			std::string fullpath = addDir_Folder(dir, index);
 			if (stat((fullpath).c_str(), &statbuf) == 0)
@@ -399,25 +398,6 @@ std::string	HTTPParser::handleRootDir(const Config *config) {
 	return ("");
 }
 
-static const std::vector<std::string>	getSubdirectories(const Config *config, std::string target) {
-	std::vector<std::string>	subdir;
-	bool autoindex = config->getAutoindex(target);
-	const std::vector<std::string> &roots = config->getRoot(target);
-	const std::unordered_map<std::string, Location> &locations = config->getLocations();
-
-	for (const auto& pair : locations)
-	{
-		subdir.push_back(pair.first);
-	}
-	for (const std::string &root: roots)
-	{
-		subdir.push_back(root);
-		if (autoindex)
-			getSubdirRecursive(root, subdir);
-	}
-	return (subdir);
-}
-
 /**
  * @brief checks for paths (redir, root, access)
  * @param config pointer to Config
@@ -426,14 +406,16 @@ std::string	HTTPParser::generatePath(const Config *config) {
 	struct stat	statbuf;
 	std::string	full_path;
 
-	result_.subdir = getSubdirectories(config, result_.request_target);
+	if (result_.method == "DELETE")
+		return (result_.request_target);
 	if (isRedirection(result_.request_target, config->getRedirect(result_.request_target)))
 		return ("");
 	else if (result_.request_target == "/")
 		return (handleRootDir(config));
-	for (const std::string &folder : result_.subdir)
+	for (const std::string &folder : config->getRoot(result_.request_target))
 	{
 		full_path = addDir_Folder(folder, result_.request_target);
+		std::cerr << "path: " << full_path << std::endl;
 		if (stat(full_path.c_str(), &statbuf) == 0)
 		{
 			if (statbuf.st_mode & S_IFDIR)

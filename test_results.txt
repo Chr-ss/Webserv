@@ -1,6 +1,6 @@
 HTTP/1.1 200 OK
 Content-Type: text/html
-Content-Length: 845
+Content-Length: 921
 Transfer-Encoding: chunked
 
 <!DOCTYPE html>
@@ -23,6 +23,7 @@ Transfer-Encoding: chunked
 			<a href="index.html">Home</a>
 			<a href="/http/upload.html">Upload</a>
 			<a href="/http/contact.html">Contact</a>
+			<a href="/http/error-testing.html" class="highlight">CGI error tests</a>
 		</nav>
 
 		<main>

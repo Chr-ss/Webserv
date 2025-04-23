@@ -7,7 +7,6 @@
 struct HTTPRequest
 {
 	std::vector<std::string>	host;
-	std::vector<std::string>	subdir;
 	std::string 				method;
 	std::string 				request_target;
 	std::string 				protocol;
