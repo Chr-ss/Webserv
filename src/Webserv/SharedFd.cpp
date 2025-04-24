@@ -51,8 +51,7 @@ void	SharedFd::printOpenFds() {
 void	SharedFd::closeFd() {
 	if (_fd >= 0 && !_temp)
 	{
-		if(close(_fd) == -1)
-			std::cerr << "Close() failed: " << _fd <<  " : " << strerror(errno) << std::endl;
+		close(_fd);
 	}
 }
 

@@ -12,7 +12,6 @@ SRCDIR		:=	src
 SRC			:= $(SRCDIR)/main.cpp \
 				$(SRCDIR)/Webserv/Epoll.cpp \
 				$(SRCDIR)/Webserv/SharedFd.cpp \
-				$(SRCDIR)/Webserv/Socket.cpp \
 				$(SRCDIR)/Webserv/Webserv.cpp \
 				$(SRCDIR)/HTTP/HTTPClient.cpp \
 				$(SRCDIR)/HTTP/HTTPParser.cpp \
