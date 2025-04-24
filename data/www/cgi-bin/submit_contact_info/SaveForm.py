@@ -7,12 +7,12 @@ import urllib
 class SaveForm:
 	def __init__( self, fields:dict[str,str] ):
 		self.fields = fields
-	
+
 	def get_form_to_write( self ) -> str:
 		form_info = ""
 
 		for key, value in self.fields.items():
-			print("key:", key, "value:", value, file=sys.stderr)
+			# print("key:", key, "value:", value, file=sys.stderr)
 			form_info += key + " = " + urllib.parse.unquote(value[:500])
 			if form_info[-1] != '\n':
 				form_info += "; "
