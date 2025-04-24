@@ -75,7 +75,6 @@ void	CGI::handle(const SharedFd &fd, uint32_t events) {
 		handleTimeOut();
 		CGI_STATE_ = HANDLE_RSPNS_CGI;
 	}
-
 	switch (CGI_STATE_) {
 		case START_CGI:
 			execCGI();

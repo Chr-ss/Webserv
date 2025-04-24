@@ -298,54 +298,28 @@ bool	HTTPParser::isRedirection(std::string &endpoint, const std::vector<std::str
 	return (false);
 }
 
-static std::string	addDir_Folder(std::string path, std::string folder) {
+
+static std::string	addDir_Folder(std::string root, std::string path, std::string folder) {
 	std::string	full_path = "";
+
+	if (!root.empty())
+	{
+		if (root.back() == '/')
+			root.pop_back();
+		full_path = root;
+	}
 	if (path.back() == '/')
 		path.pop_back();
 	if (folder.front() != '/')
-		full_path = path + '/' + folder;
+		full_path += path + '/' + folder;
 	else
-		full_path = path + folder;
+		full_path += path + folder;
 	if (full_path.back() == '/')
 		full_path.pop_back();
 	return (full_path);
 }
 
-static bool	folderExists(const std::string &path, const std::string &dir, std::string &fullpath) {
-	struct stat statbuf;
-
-	fullpath = addDir_Folder(path, dir);
-	if (stat(fullpath.c_str(), &statbuf) == 0 && S_ISDIR(statbuf.st_mode))
-		return (true);
-	return (false);
-}
-
-static void	getSubdirRecursive(const std::string &path, std::vector<std::string> &subdirs) {
-	struct dirent 	*d;
-	DIR 			*dir;
-	std::string		fullpath;
-
-	dir = opendir(path.c_str());
-	if (!dir)
-		return ;
-	while (true)
-	{
-		d = readdir(dir);
-		if (d == nullptr)
-			break ;
-		else if (d->d_name[0] == '.')
-			continue ;
-		else if (folderExists(path, std::string(d->d_name), fullpath))
-		{
-			if (std::find(subdirs.begin(), subdirs.end(), fullpath) == subdirs.end())
-				subdirs.push_back(fullpath);
-			getSubdirRecursive(fullpath, subdirs);
-		}
-	}
-	closedir(dir);
-}
-
-static bool	isAccesseble(const std::string &path, int &status_code) {
+static bool	hasRightPermission(const std::string &path, int &status_code) {
 	if (access(path.c_str(), F_OK) != -1)
 	{
 		if (access(path.c_str(), R_OK) == -1)
@@ -361,50 +335,59 @@ static bool	isAccesseble(const std::string &path, int &status_code) {
 	return (false);
 }
 
+bool	isAccessible(std::string &fullpath, bool &dir_list, int &statuscode) {
+	struct stat	statbuf;
+	
+	if (stat((fullpath).c_str(), &statbuf) == 0)
+	{
+		if (S_ISDIR(statbuf.st_mode))
+		{
+			dir_list = true;
+			return (true);
+		}
+		else if (hasRightPermission(fullpath, statuscode))
+			return (true);
+	}
+	return (false);
+}
+
 std::string	HTTPParser::handleRootDir(const Config *config) {
 	if (config->getAutoindex("/") == false) // AUTOINDEX OFF, so '/' returns 403
 	{
 		result_.status_code = 403;
-		std::cerr << "auto index off, request / so statuscode 403\n";
 		return ("");
 	}
 
 	const std::vector<std::string> indices = config->getIndex("/");
-	if (indices.empty()) // if no indices givens body = list of dir
+	if (indices.empty())
 	{
 		result_.dir_list = true;
-		std::cerr << "no indices given so printing dir\n";
 		return ("");
 	}
 
-	std::string	folder_file;
-	struct stat	statbuf;
 	for (const std::string &index : indices)
 	{
-		for (const std::string &dir : config->getRoot("/"))
+		for (const std::string &root : config->getRoot("/"))
 		{
-			std::string fullpath = addDir_Folder(dir, index);
-			if (stat((fullpath).c_str(), &statbuf) == 0)
-			{
-				if (S_ISDIR(statbuf.st_mode))
-					result_.dir_list = true;
-				else if (isAccesseble(fullpath, result_.status_code)) // TODO: typo
-					return (fullpath);
-			}
+			std::string fullpath = addDir_Folder(root, "", index);
+			if (isAccessible(fullpath, result_.dir_list, result_.status_code))
+				return (fullpath);
 		}
 	}
-	std::cerr << "no good index found in root so 404" << std::endl;
 	result_.status_code = 404;
 	return ("");
 }
+
+
 
 /**
  * @brief checks for paths (redir, root, access)
  * @param config pointer to Config
  */
 std::string	HTTPParser::generatePath(const Config *config) {
-	struct stat	statbuf;
+	const std::unordered_map<std::string, Location> loc = config->getLocations();
 	std::string	full_path;
+	std::string	subloc("");
 
 	if (result_.method == "DELETE")
 		return (result_.request_target);
@@ -412,15 +395,20 @@ std::string	HTTPParser::generatePath(const Config *config) {
 		return ("");
 	else if (result_.request_target == "/")
 		return (handleRootDir(config));
-	for (const std::string &folder : config->getRoot(result_.request_target))
+
+	for (const std::string &root : config->getRoot(result_.request_target))
 	{
-		full_path = addDir_Folder(folder, result_.request_target);
-		std::cerr << "path: " << full_path << std::endl;
-		if (stat(full_path.c_str(), &statbuf) == 0)
-		{
-			if (statbuf.st_mode & S_IFDIR)
-				result_.dir_list = true;
+		full_path = addDir_Folder(root, "", result_.request_target);
+		if (isAccessible(full_path, result_.dir_list, result_.status_code))
 			return (full_path);
+		
+		// FOR AUTOINDEX
+		for (const auto &pair : loc)
+		{
+			full_path = addDir_Folder(root, pair.first, result_.request_target);
+			bool autoindex = config->getAutoindex(full_path);
+			if (autoindex && isAccessible(full_path, result_.dir_list, result_.status_code))
+				return (full_path);
 		}
 	}
 	result_.status_code = 404;

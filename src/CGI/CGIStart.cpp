@@ -26,7 +26,7 @@ void	CGI::execCGI() {
 
 			std::vector<char*>	env_vector = createEnv();
 			std::vector<char*>	argv_vector = std::vector<char*>{const_cast<char*>(scriptPath_.c_str()), NULL};
-
+			std::cerr << "excevce: " << scriptPath_ << std::endl;
 			if (execve(scriptPath_.c_str(), argv_vector.data(), env_vector.data()) == -1)
 				throw std::runtime_error("execve(): " +  scriptPath_ + ": " + std::strerror(errno));
 		} catch (std::runtime_error &e) {
