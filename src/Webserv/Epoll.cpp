@@ -1,6 +1,6 @@
 #include "../../inc/Webserv/Epoll.hpp"
 
-Epoll::Epoll() : 
+Epoll::Epoll() :
 	_epFd(epoll_create1(EPOLL_CLOEXEC)),
 	_timeout(TIMEOUT_DFLT)
 {
@@ -14,7 +14,7 @@ Epoll::Epoll() :
 // - fd: 	fd to monitor
 // - data:	other data - can be used to store associated fd
 void	Epoll::add(int fd, int data, u_int32_t events) {
-	std::cerr << "add fd: " << fd << std::endl;
+	// std::cerr << "add fd: " << fd << std::endl;
 	if (fd == -1)
 		throw std::runtime_error(std::string("fd == -1 in add Epoll"));
 	_eventDataStorage[fd] = {fd, data};
@@ -61,7 +61,7 @@ void	Epoll::del(int fd) {
 		throw std::runtime_error("Epoll::del(): trying to delete unmonitored fd: " + std::to_string(fd));
 	}
 
-	std::cerr << "del fd: " << fd << " from client: " << it->second.data << std::endl;
+	// std::cerr << "del fd: " << fd << " from client: " << it->second.data << std::endl;
 	_eventDataStorage.erase(it);
 
 	if (epoll_ctl(_epFd.get(), EPOLL_CTL_DEL, fd, nullptr) == -1) {

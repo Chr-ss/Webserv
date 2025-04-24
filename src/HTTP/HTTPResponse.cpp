@@ -29,13 +29,13 @@ void	HTTPResponse::generateResponse(HTTPRequest request) {
 
 	if (request.dir_list)
 	{
-		std::cerr << "filename: " << filename << std::endl;
-		std::cerr << "autoindex on/off: " << config_->getAutoindex(filename) << std::endl;
+		// std::cerr << "filename: " << filename << std::endl;
+		// std::cerr << "autoindex on/off: " << config_->getAutoindex(filename) << std::endl;
 		if (!config_->getAutoindex(filename))
 			request.status_code = 404;
 		else
 			dir_list_ = true ;
-		std::cerr << dir_list_ << "dirlist is on " << request.status_code << std::endl;
+		// std::cerr << dir_list_ << "dirlist is on " << request.status_code << std::endl;
 	}
 
 	if (!request.invalidRequest && request.status_code == 200)
@@ -43,12 +43,12 @@ void	HTTPResponse::generateResponse(HTTPRequest request) {
 	else if (isRedirectStatusCode(request.status_code))
 	{
 		header_ = request.body;
-		std::cerr << "header: " << header_ << std::endl;
+		// std::cerr << "header: " << header_ << std::endl;
 	}
 	else if (isCustomErrorPages(filename, request.status_code))
 	{
 		filename_ = searchErrorPage(request.subdir, filename);
-		std::cerr << "is customerrorpage" << std::endl;
+		// std::cerr << "is customerrorpage" << std::endl;
 	}
 	status_code_ = request.status_code;
 }
@@ -77,7 +77,7 @@ std::string	HTTPResponse::loadResponse(void) {
 	getContentType();
 	getHttpStatusMessages();
 	createHeader();
-	std::cerr << "Response: \n" << header_ << "body size: " << body_.size() << "\n" << std::endl;
+	// std::cerr << "Response: \n" << header_ << "body size: " << body_.size() << "\n" << std::endl;
 	return (header_ + body_);
 }
 
@@ -96,18 +96,18 @@ std::string	HTTPResponse::searchErrorPage(const std::vector<std::string> &dir, c
 	for (const std::string &path : dir)
 	{
 		std::string fullpath = path + errorpage;
-		std::cerr << "path: " << path << " page: " << errorpage << std::endl;
+		// std::cerr << "path: " << path << " page: " << errorpage << std::endl;
 		if (stat(fullpath.c_str(), &statbuf) == 0)
 		{
 			if (access(fullpath.c_str(), F_OK) != -1)
 			{
 				if (access(fullpath.c_str(), R_OK) == -1)
 				{
-					std::cerr << "No permission" << std::endl;
+					// std::cerr << "No permission" << std::endl;
 					status_code_ = 403;
 					return "";
 				}
-				std::cerr << "fullpath: " << fullpath << std::endl;
+				// std::cerr << "fullpath: " << fullpath << std::endl;
 				return (fullpath);
 			}
 			break ;
@@ -121,8 +121,8 @@ bool	HTTPResponse::isCustomErrorPages(std::string &filename, int status_code) {
 	std::string error_page = config_->getErrorPage(status_code);
 	if (error_page.empty())
 		return (false);
-	
-	std::cerr << "status code: " << status_code << " filename: " << error_page << std::endl;
+
+	// std::cerr << "status code: " << status_code << " filename: " << error_page << std::endl;
 	filename = error_page;
 	status_code_ = status_code;
 	return (true);
@@ -186,7 +186,7 @@ void	HTTPResponse::getContentType( void )
 	if (dir_list_)
 	{
 		content_type_ = "text/html";
-		std::cerr << "dir list on\n";
+		// std::cerr << "dir list on\n";
 		return ;
 	}
 	index = filename_.find_last_of('.');

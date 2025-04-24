@@ -2,8 +2,8 @@
 #include <memory>
 
 HTTPClient::HTTPClient(
-	SharedFd clientFd, 
-	SharedFd serverFd, 
+	SharedFd clientFd,
+	SharedFd serverFd,
 	std::function<void(struct epoll_event, const SharedFd&)>  addToEpoll_cb,
 	std::function<std::shared_ptr<Config> (const SharedFd&, const std::string&)> getConfig_cb,
 	std::function<void(const SharedFd&)> delFromEpoll_cb
@@ -52,7 +52,7 @@ void	HTTPClient::handle(const epoll_event &event) {
 			throw ClientException("Client received EPOLLHUP: " + std::to_string(fd));
 		}
 	}
-	
+
 	switch (STATE_) {
 		case RECEIVING:
 			handleReceiving(fd, event.events);
@@ -68,14 +68,14 @@ void	HTTPClient::handle(const epoll_event &event) {
 	}
 }
 
-void	printRequest(HTTPRequest request) {
-	std::cerr << "------------------\nRequest:\n";
-	std::cerr << "Method: " << request.method << "\n";
-	std::cerr << "Target: " << request.request_target << "\n";
-	std::cerr << "Host: " << request.host[0] << "\n";
-	std::cerr << "StatusCode: " << request.status_code << "\n";
-	std::cerr << "Dir on/off: " << request.dir_list << "\n------------------\n";
-}
+// void	printRequest(HTTPRequest request) {
+// 	std::cerr << "------------------\nRequest:\n";
+// 	std::cerr << "Method: " << request.method << "\n";
+// 	std::cerr << "Target: " << request.request_target << "\n";
+// 	std::cerr << "Host: " << request.host[0] << "\n";
+// 	std::cerr << "StatusCode: " << request.status_code << "\n";
+// 	std::cerr << "Dir on/off: " << request.dir_list << "\n------------------\n";
+// }
 
 void	HTTPClient::initCGI() {
 	CGIPipes pipes;
@@ -94,9 +94,9 @@ void	HTTPClient::handleReceiving(SharedFd fd, uint32_t events) {
 	if (!parser_.isDone()) {
 		return ;
 	}
-	
+
 	request_ = parser_.getParsedRequest();
-	printRequest(request_); //TODO: REMOVE
+	// printRequest(request_); //TODO: REMOVE
 	responseGenerator_.setConfig(config_);
 	// first_response_ = true;
 	if (request_.status_code != 200 || !CGI::isCGI(request_)) {
@@ -154,17 +154,17 @@ std::string	HTTPClient::cgiResponse(void) {
 			cgi_error_request.request_target = "Server Error";
 		else if (status >= 400)
 			cgi_error_request.request_target = "Client Error";
-		std::cerr << "is cgi timeout or " << cgi_error_request.request_target << ": " << status << std::endl;
+		// std::cerr << "is cgi timeout or " << cgi_error_request.request_target << ": " << status << std::endl;
 		cgi_error_request.status_code = status;
 		cgi_error_request.subdir.push_back("data/www/");
 		responseGenerator_.generateResponse(cgi_error_request);
 		response = responseGenerator_.loadResponse();
 	}
-	else {	
+	else {
 		response = cgi_->getResponse();
 	}
-	std::cerr << "-------------------\nCGI Response: " << response \
-		<< "\n-----------------" << std::endl;
+	// std::cerr << "-------------------\nCGI Response: " << response \
+	// 	<< "\n-----------------" << std::endl;
 	return (response);
 }
 

@@ -7,7 +7,7 @@ Socket::Socket() : _fd(::socket(AF_INET, SOCK_STREAM, 0)) {
 	// REMOVE!
 	int opt = 1;
 	if (setsockopt(_fd.get(), SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt)) != 0) {
-		std::cerr << "Setsockopt failed\n";
+		// std::cerr << "Setsockopt failed\n";
 		throw std::runtime_error(std::string("socket(): ") + strerror(errno));
 	}
 }
@@ -39,7 +39,7 @@ Socket& Socket::operator=(const Socket& other) {
 }
 
 Socket::~Socket() {
-	std::cerr << "close fd: " << _fd.get() << std::endl;
+	// std::cerr << "close fd: " << _fd.get() << std::endl;
 	try {
 		close(_fd.get());
 	}

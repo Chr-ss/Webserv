@@ -324,7 +324,7 @@ static bool	hasRightPermission(const std::string &path, int &status_code) {
 	{
 		if (access(path.c_str(), R_OK) == -1)
 		{
-			std::cerr << "No permission" << std::endl;
+			// std::cerr << "No permission" << std::endl;
 			status_code = 403;
 			return (false);
 		}
@@ -337,7 +337,7 @@ static bool	hasRightPermission(const std::string &path, int &status_code) {
 
 bool	isAccessible(std::string &fullpath, bool &dir_list, int &statuscode) {
 	struct stat	statbuf;
-	
+
 	if (stat((fullpath).c_str(), &statbuf) == 0)
 	{
 		if (S_ISDIR(statbuf.st_mode))
@@ -396,7 +396,7 @@ std::string	HTTPParser::generatePath(const Config *config) {
 		full_path = addDir_Folder(root, "", result_.request_target);
 		if (isAccessible(full_path, result_.dir_list, result_.status_code))
 			return (full_path);
-		
+
 		// FOR AUTOINDEX ON
 		for (const auto &pair : loc)
 		{
