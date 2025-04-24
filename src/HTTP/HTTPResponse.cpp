@@ -47,7 +47,7 @@ void	HTTPResponse::generateResponse(HTTPRequest request) {
 	}
 	else if (isCustomErrorPages(filename, request.status_code))
 	{
-		filename_ = searchErrorPage(config_->getRoot(request.request_target), filename);
+		filename_ = searchErrorPage(config_->getRoot("/"), filename);
 		// std::cerr << "is customerrorpage" << std::endl;
 	}
 	status_code_ = request.status_code;
