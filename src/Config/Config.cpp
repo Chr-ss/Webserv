@@ -104,6 +104,9 @@ const std::unordered_map<std::string, std::vector<std::string>> Config::getLocDi
 	// Add file locations
 	if (pos == std::string::npos && relLocKey.back() != '/') {
 		pos = relLocKey.find_last_of('/');
+		if (pos == std::string::npos) {
+			pos = 0;
+		}
 		key = relLocKey.substr(pos, relLocKey.size());
 		auto it = this->_locations.find(key);
 		if (it != this->_locations.end()) {
