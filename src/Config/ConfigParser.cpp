@@ -18,6 +18,7 @@ void debugConfigPrint(std::vector<Config> &configs) {
 		std::cout << BOLD << "getServerName(): " << config.getServerName() << RESET << std::endl;
 		std::cout << BOLD << "getErrorPage(404): " << config.getErrorPage(404) << RESET << std::endl;
 		std::cout << BOLD << "getAutoindex(\"/\"): " << config.getAutoindex("/") << RESET << std::endl;
+		std::cout << BOLD << "getAutoindex(\"data/www/images/\"): " << config.getAutoindex("data/www/images/") << RESET << std::endl;
 		std::cout << BOLD << "getClientBodySize(\"/\"): " << config.getClientBodySize("/") << RESET << std::endl;
 		std::cout << BOLD << "getRoot(\"/\"): ";
 		std::vector<std::string> roots = config.getRoot("/");
@@ -373,6 +374,8 @@ void ConfigParser::parseTokenToLocDir(std::vector<token>::iterator &it, Location
 	std::string key = it->value;
 	std::vector<token>::iterator key_it = it;
 	std::vector<std::string> values;
+	if (key == "index")
+		errorToken(*it, "Invalid argument in location");
 	moveOneTokenSafly(this->_tokens, it);
 	for (;it != this->_tokens.end(); it++) {
 		if (it->type < STRING)

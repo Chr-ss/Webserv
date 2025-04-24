@@ -156,7 +156,6 @@ std::string	HTTPClient::cgiResponse(void) {
 			cgi_error_request.request_target = "Client Error";
 		// std::cerr << "is cgi timeout or " << cgi_error_request.request_target << ": " << status << std::endl;
 		cgi_error_request.status_code = status;
-		cgi_error_request.subdir.push_back("data/www/");
 		responseGenerator_.generateResponse(cgi_error_request);
 		response = responseGenerator_.loadResponse();
 	}

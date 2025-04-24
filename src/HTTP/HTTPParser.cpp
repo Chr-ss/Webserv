@@ -314,8 +314,6 @@ static std::string	addDir_Folder(std::string root, std::string path, std::string
 		full_path += path + '/' + folder;
 	else
 		full_path += path + folder;
-	if (full_path.back() == '/')
-		full_path.pop_back();
 	return (full_path);
 }
 
@@ -335,15 +333,22 @@ static bool	hasRightPermission(const std::string &path, int &status_code) {
 	return (false);
 }
 
-bool	isAccessible(std::string &fullpath, bool &dir_list, int &statuscode) {
+bool	isAccessible(std::string &fullpath, bool &dir_list, int &statuscode, bool autoindex) {
 	struct stat	statbuf;
 
 	if (stat((fullpath).c_str(), &statbuf) == 0)
 	{
 		if (S_ISDIR(statbuf.st_mode))
 		{
-			dir_list = true;
-			return (true);
+			std::cerr << "index: " << autoindex << std::endl;
+			if (fullpath.back() == '/' && autoindex)
+			{
+				dir_list = true;
+				return (true);
+			}
+			else if (fullpath.back() == '/')
+				statuscode = 403;
+			return (false);
 		}
 		else if (hasRightPermission(fullpath, statuscode))
 			return (true);
@@ -361,7 +366,8 @@ std::string	HTTPParser::handleRootDir(const Config *config) {
 		for (const std::string &index : indices)
 		{
 			path = root + index;
-			if (isAccessible(path, result_.dir_list, result_.status_code))
+			bool autoindex = config->getAutoindex(path);
+			if (isAccessible(path, result_.dir_list, result_.status_code, autoindex))
 				return (path);
 		}
 	}
@@ -394,18 +400,14 @@ std::string	HTTPParser::generatePath(const Config *config) {
 	for (const std::string &root : config->getRoot(result_.request_target))
 	{
 		full_path = addDir_Folder(root, "", result_.request_target);
-		if (isAccessible(full_path, result_.dir_list, result_.status_code))
+		std::cerr << "full path: " << full_path << std::endl;
+		bool autoindex = config->getAutoindex(full_path);
+		if (isAccessible(full_path, result_.dir_list, result_.status_code, autoindex)) {
 			return (full_path);
-
-		// FOR AUTOINDEX ON
-		for (const auto &pair : loc)
-		{
-			full_path = addDir_Folder(root, pair.first, result_.request_target);
-			bool autoindex = config->getAutoindex(full_path);
-			if (autoindex && isAccessible(full_path, result_.dir_list, result_.status_code))
-				return (full_path);
 		}
 	}
+	if (result_.status_code == 403)
+		return ("");
 	result_.status_code = 404;
 	return ("");
 }

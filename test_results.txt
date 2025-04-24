@@ -1,5 +1,1 @@
-HTTP/1.1 301 Found
-Connection: close
-Location: /http/contact.html
-Content-Type: text/html
 
