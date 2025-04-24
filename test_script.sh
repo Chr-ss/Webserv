@@ -85,7 +85,7 @@ echo ""
 
 echo "" > test_results.txt
 echo -e "TEST 12: ${YEL} delete with GET localhost:$PORT?text.txt: ${RES} "
-curl -s --http1.1 -X GET localhost:$PORT//nph_CGI_delete.py?file=small.png -i -o test_results.txt
+curl -s --http1.1 -X GET localhost:$PORT/cgi-bin/nph_CGI_delete.py?file=small.png -i -o test_results.txt
 head -n 1 test_results.txt | grep -q "302" && echo -e "${GRE} Status is 302 found" || echo -e "${RED}Status is not ok${RES}"
 echo ""
 
